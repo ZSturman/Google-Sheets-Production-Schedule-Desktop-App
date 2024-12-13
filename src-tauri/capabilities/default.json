@@ -89,7 +89,6 @@
         }
       ]
     },
-    "dialog:default",
-    "sql:default"
+    "dialog:default"
   ]
 }

@@ -1,452 +1,612 @@
+// DataProvider.tsx
 import {
   createContext,
   useContext,
   ReactNode,
   useEffect,
+  useMemo,
   useState,
+  useRef,
 } from "react";
 import { useCredentials } from "./CredentialProvider";
-import getGoogleSheetData from "../data/getGoogleSheetsData";
-import Database from "@tauri-apps/plugin-sql";
 import {
-  createTable,
-  fetchRecords,
-
-  insertOrUpdateRecords,
-} from "../data/sqlDatabaseFunctions";
+  allTabs,
+  ledgersTab,
+  productsTab,
+  workCenterSchedulesTab,
+} from "../data/tabs";
+import {
+  getDefaultLedgersRow,
+  getDefaultProductsRow,
+  getDefaultWorkCenterSchedules,
+} from "../data/defaults";
 import { updateGoogleSheetData } from "../data/updateGoogleSheetsData";
-import { productsTab, workCenterScheduleTab } from "../data/tabs";
+import fetchGoogleSheetsData from "../data/getGoogleSheetsData";
+import { v4 as uuidv4 } from "uuid";
+import { calculateScheduleStartAndEnd } from "../data/calculateScheduledStartAndEnd";
+import { workCenters } from "../data/lists";
 
+type DataState = {
+  products: ProductData[];
+  workCenterSchedules: WorkCenterScheduleData[];
+  ledger: LedgerData[];
+};
+
+const initialState: DataState = {
+  products: [],
+  workCenterSchedules: [],
+  ledger: [],
+};
 
 type DataContextType = {
-  messages: Message[];
-  addMessage: (message: Message) => void;
-  refreshData: () => Promise<void>;
-  productsData: ProductData[] | LoadingState;
-  workCenterScheduleData: WorkCenterScheduleData[] | LoadingState;
-  addLocalSheetUpdate: (
+  state: DataState;
+  loading: boolean;
+  updatedAt: number; // Expose the timestamp
+  handleDataChange: (
     tab: TabOption,
-    type: "update" | "delete" | "add",
-    row: DataRowT,
-    prevRow?: DataRowT
-  ) => void;
+    actionType: "add" | "update",
+    data: ProductData | WorkCenterScheduleData | LedgerData
+  ) => Promise<void>;
+  handleDeleteRows: (
+    tab: TabOption,
+    data: (ProductData | WorkCenterScheduleData | LedgerData)[]
+  ) => Promise<void>;
+  processAllWorkCenters: () => Promise<void>;
+  processSpecificWorkCenter: (workCenter: WorkCenter) => Promise<void>;
 };
 
-const defaultDataContext: DataContextType = {
-  messages: [],
-  addMessage: () => {},
-  refreshData: async () => {},
-  productsData: "loading",
-  workCenterScheduleData: "loading",
-  addLocalSheetUpdate: () => {},
-};
-
-const DataContext = createContext<DataContextType>(defaultDataContext);
+const DataContext = createContext<DataContextType | undefined>(undefined);
 
 type DataProviderProps = {
   children: ReactNode;
-  selectedTab: TabOption;
-  db: Database;
+  //db: Database;
 };
 
-export const DataProvider = ({
-  children,
-  selectedTab,
-  db,
-}: DataProviderProps) => {
-  const { credentialsPath, sheetIdentifier, appDirectoryPath } = useCredentials();
+export const DataProvider = ({ children }: DataProviderProps) => {
+  const { credentialsPath, sheetIdentifier } = useCredentials();
+  // const [state, dispatch] = useReducer(dataReducer, initialState);
+  const [state, setState] = useState<DataState>(initialState);
 
-  const [isConfigReady, setIsConfigReady] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const dataRef = useRef<DataState>(initialState);
+  //const originalDataRef = useRef<DataState>(initialState);
+  const isInitialized = useRef(false);
 
-  const [productsData, setProductsData] = useState<ProductData[] | LoadingState>("loading");
-  const [workCenterScheduleData, setWorkCenterScheduleData] = useState<WorkCenterScheduleData[] | LoadingState>("loading");
-
-  const [needToPushToDatabase, setNeedToPushToDatabaseUpdates] = useState<LocalSheetUpdate[]>([]);
-  const [needToPushToGoogle, setNeedToPushToGoogleUpdates] = useState<SqlSheetUpdate[]>([]);
-  const [finalizedUpdates, setFinalizedUpdates] = useState<FinalizedSheetUpdate[]>([]);
+  const [productsPopulated, setProductsPopulated] = useState(false);
+  const [workCenterSchedulesPopulated, setWorkCenterSchedulesPopulated] =
+    useState(false);
+  const [ledgerPopulated, setLedgerPopulated] = useState(false);
 
 
-  /* ----------------- Local Sheet Updates ----------------- */ 
-  
 
-  const addLocalSheetUpdate = (
+  const [productsDebounceTimer, setProductsDebounceTimer] = useState<number | null>(null);
+  const [workCenterSchedulesDebounceTimer, setWorkCenterSchedulesDebounceTimer] = useState<number | null>(null);
+  const [ledgerDebounceTimer, setLedgerDebounceTimer] = useState<number | null>(null);
+
+  const [productsHeaders, setProductsHeaders] = useState<string[]>([]);
+  const [workCenterSchedulesHeaders, setWorkCenterSchedulesHeaders] = useState<string[]>([]);
+  const [ledgerHeaders, setLedgerHeaders] = useState<string[]>([]);
+
+  const [loading, setLoading] = useState(true);
+  const [updatedAt, setUpdatedAt] = useState(Date.now());
+
+  const handleDataChange = async (
     tab: TabOption,
-    type: "update" | "delete" | "add",
-    row: DataRowT,
-    prevRow?:DataRowT
+    actionType: "add" | "update",
+    data: ProductData | WorkCenterScheduleData | LedgerData
   ) => {
+    console.log("DATA CHANGED", tab, actionType, data);
+    console.log(productsDebounceTimer, workCenterSchedulesDebounceTimer, ledgerDebounceTimer);
 
-    console.log("Adding local sheet update:", type, row);
-    console.log("Previous row:", prevRow);
-
-    const updatedLocallyAt = new Date();
-
-    const newSheetUpdate: LocalSheetUpdate = {
-      tab,
-      updatedLocallyAt,
-      undo: false,
-      type,
-      row,
-      prevRow,
-    };
-
-    setNeedToPushToDatabaseUpdates((prevUpdates) => [
-      newSheetUpdate,
-      ...prevUpdates,
-    ]);
-  };
-
-
-  useEffect(() => {
-    console.log("Need to push to database:", needToPushToDatabase);
-    if (needToPushToDatabase.length === 0) return;
-    console.log("Pushing to database");
-    const [update, ...rest] = needToPushToDatabase;
-    updateDbAndGetReadyToUpdateGoogle(update);
-    setNeedToPushToDatabaseUpdates(rest);
-  }, [needToPushToDatabase]);
-
-  useEffect(() => {
-
-    console.log("Need to push to Google:", needToPushToGoogle);
-    if (needToPushToGoogle.length === 0) return;
-    const [update, ...rest] = needToPushToGoogle;
-
-    console.log("Pushing to Google Sheets:", update);
-  
-    // Directly call the update function without a delay
-    updateGoogleSheets(update).then(() => {
-      console.log("Google Sheets updated successfully");
-      setNeedToPushToGoogleUpdates(rest);
-    });
-  }, [needToPushToGoogle]);
-
-
-  const updateDbAndGetReadyToUpdateGoogle = async (update: LocalSheetUpdate) => {
-
-    console.log("Updating database and preparing to update Google Sheets:", update);
     try {
-      const { type, row, tab } = update;
+      // Determine the relevant timer state and commit function
+      let timerStateSetter: React.Dispatch<React.SetStateAction<number | null>>;
+      let commitFunction: () => Promise<void>;
 
-      console.log("Updating database:", type, row);
-  
-      switch (type) {
-        case "add":
-          await addRecord(row, tab.sqlTableName);
+      switch (tab.id) {
+        case "work_center_schedules":
+          timerStateSetter = setWorkCenterSchedulesDebounceTimer;
+          commitFunction = commitWorkCenterSchedulesSheet;
           break;
-        case "update":
-          await updateRecord(row.id, row, tab.sqlTableName);
-          break;
-        case "delete":
-          await deleteRecord(row.id, row, tab.sqlTableName);
+        case "ledger":
+          timerStateSetter = setLedgerDebounceTimer;
+          commitFunction = commitLedgerSheet;
           break;
         default:
-          throw new Error("Unknown update type");
+          timerStateSetter = setProductsDebounceTimer;
+          commitFunction = commitProductsSheet;
+          break;
       }
-  
-      // Refresh data to ensure local state matches database
-      await refreshData();
 
-      console.log("Database updated successfully (locally)");
-  
-      // Push the update to Google Sheets
-      const sqlUpdate = {
-        ...update,
-        updatedSqlAt: new Date(),
-      };
+      if (actionType === "add" || actionType === "update") {
+        console.log("Is Add or Update");
+        if (!tab.columnDict) {
+          console.error("Column dictionary not found for tab:", tab);
+          return;
+        }
 
-      console.log("Preparing to update Google Sheets:", sqlUpdate);
-      setNeedToPushToGoogleUpdates((prevUpdates) => [sqlUpdate, ...prevUpdates]);
-    } catch (error) {
-      console.error("Error updating database:", error);
-    }
-  };
-  
-  const updateGoogleSheets = async (update: SqlSheetUpdate) => {
-    try {
-      // Fetch the latest data from the database
-      let refreshedData = await fetchRecords<DataRowT>(db, update.tab.sqlTableName);
-  
-      console.log("REFRESHED DATA:", refreshedData);
-  
-      // If the updated row exists in refreshed data, replace it with the updated row
-      refreshedData = refreshedData.map((record) =>
-        record.id === update.row.id ? update.row : record
-      );
-  
-      // Prepare data for Google Sheets
-      const preparedData = refreshedData.map((record) =>
-        Object.values(update.tab.columnDict ?? {})
-          .filter((col) => col.googleSheetHeader) // Filter out the `id` column
-          .map((col) =>
-            col.toGoogleConverter
-              ? col.toGoogleConverter(record[col.sqlTableHeader])
-              : String(record[col.sqlTableHeader] ?? "")
-          )
-      );
-  
-      console.log("PREPARED DATA:", preparedData);
-  
-      const googleSheetData = [
-        Object.values(update.tab.columnDict ?? {})
-          .filter((col) => col.googleSheetHeader)
-          .map((col) => col.googleSheetHeader!), // Use only headers that map to Google Sheet columns
-        ...preparedData,
-      ];
-  
-      console.log("GOOGLE SHEET DATA:", googleSheetData);
-  
-      await updateGoogleSheetData(
-        credentialsPath,
-        sheetIdentifier,
-        update.tab,
-        addMessage,
-        googleSheetData
-      );
-  
-      console.log("Google Sheets updated successfully");
-  
-      // Mark the update as finalized
-      const finalizedUpdate = {
-        ...update,
-        updatedGoogleAt: new Date(),
-      };
-      setFinalizedUpdates((prevUpdates) => [finalizedUpdate, ...prevUpdates]);
-    } catch (error) {
-      console.error("Error updating Google Sheets:", error);
-    }
-  };
+        if (tab.id === "products") {
+          console.log("Is Products");
+          if (actionType === "add") {
+            if (actionType === "add") {
+              dataRef.current.products = [
+                ...dataRef.current.products,
+                { ...data, id: uuidv4() } as ProductData, // Ensure id is unique
+              ];
+            }
+          } else {
+            console.log("Is Update");
+            const updated = dataRef.current.products.map((product) =>
+              product.id === (data as ProductData).id
+                ? (data as ProductData)
+                : product
+            );
+            dataRef.current.products = updated;
+          }
+        } else if (tab.id === "work_center_schedules") {
+          console.log("Is WorkCenterSchedules");
+          if (actionType === "add") {
+            console.log("Is Add");
+            dataRef.current.workCenterSchedules = [
+              ...dataRef.current.workCenterSchedules,
+              data as WorkCenterScheduleData,
+            ];
+          } else {
+            console.log("Is Update");
+            const updated = dataRef.current.workCenterSchedules.map((w) =>
+              w.id === (data as WorkCenterScheduleData).id
+                ? (data as WorkCenterScheduleData)
+                : w
+            );
+            dataRef.current.workCenterSchedules = updated;
+          }
+        } else if (tab.id === "ledger") {
+          console.log("Is Ledger");
+          if (actionType === "add") {
+            console.log("Is Add");
+            dataRef.current.ledger = [
+              ...dataRef.current.ledger,
+              data as LedgerData,
+            ];
+          } else {
+            console.log("Is Update");
+            const updated = dataRef.current.ledger.map((l) =>
+              l.id === (data as LedgerData).id ? (data as LedgerData) : l
+            );
+            dataRef.current.ledger = updated;
+          }
+        }
+      }
 
-  /* ----------------- Data Refresh ----------------- */
+      setState(dataRef.current); // Updates the state
+      setUpdatedAt(Date.now()); // Trigger a timestamp update
 
 
-  useEffect(() => {
-    if (isConfigReady) refreshData();
-  }, [isConfigReady]);
+      timerStateSetter((prevTimer) => {
+        if (prevTimer !== null) {
+          clearTimeout(prevTimer); // Clear the previous timer
+        }
 
-  useEffect(() => {
-    if (
-      credentialsPath !== "loading" &&
-      sheetIdentifier !== "loading" &&
-      appDirectoryPath !== "loading" &&
-      credentialsPath !== "error" &&
-      sheetIdentifier !== "error" &&
-      appDirectoryPath !== "error"
-    ) {
-      setIsConfigReady(true);
-    }
-  }, [credentialsPath, sheetIdentifier, appDirectoryPath]);
-
-
-
-
-  const addMessage = (message: Message) => {
-    setMessages((prevMessages) => [...prevMessages, message]);
-    console[message.type === "error" ? "error" : "log"](message.message);
-  };
-
-  const refreshData = async () => {
-    console.log("Refreshing data");
-    try {
-      // Create tables and sync data for each tab
-      await createTablesAndSyncData(productsTab);
-      await createTablesAndSyncData(workCenterScheduleTab);
-  
-      addMessage({
-        type: "success",
-        message: "Data refreshed successfully",
-        timestamp: new Date(),
+        return window.setTimeout(async () => {
+          await commitFunction(); // Commit the relevant table
+          timerStateSetter(null); // Reset the timer state
+        }, 3000); // Adjust debounce time as needed (e.g., 3000ms = 3 seconds)
       });
     } catch (error) {
-      addMessage({
-        type: "error",
-        message: "Error refreshing data",
-        timestamp: new Date(),
-      });
-      console.error("Error refreshing data:", error);
+      console.error(`Error during ${actionType} operation:`, error);
     }
   };
 
-
-  /* ----------------- Google Sheet Data Fetch ----------------- */
-
-
-
-  const fetchGoogleSheetData = async (tab: TabOption): Promise<string[][]> => {
-    try {
-      return await getGoogleSheetData(
-        credentialsPath,
-        sheetIdentifier,
-        tab,
-        addMessage
-      );
-    } catch (error) {
-      addMessage({
-        type: "error",
-        message: "Error fetching Google Sheet data",
-        timestamp: new Date(),
-      });
-      throw error;
-    }
-  };
-
-
-  /* ----------------- Sync Data -----------------*/
-
-
-
-  const createTablesAndSyncData = async (tab: TabOption) => {
-    console.log("Creating table and syncing data:", tab);
-    if (!tab.sqlTableName || !tab.columnDict) {
-      addMessage({
-        type: "error",
-        message: "Missing SQL table name or column dictionary",
-        timestamp: new Date(),
-      });
+  const processSpecificWorkCenter = async (workCenter: WorkCenter) => {
+    if (!productsPopulated || !workCenterSchedulesPopulated) {
       return;
     }
-    try {
-      await createTable(db, tab.sqlTableName, tab.columnDict);
-      const googleSheetData = await fetchGoogleSheetData(tab);
-      await syncGoogleSheetDataToDatabase(googleSheetData, tab);
-    } catch (error) {
-      console.error("Error syncing data:", error);
+
+    const { products, workCenterSchedules } = dataRef.current;
+
+    const updatedRows: ProductData[] = [];
+
+    const returnedTimes = await calculateScheduleStartAndEnd(
+      products,
+      workCenterSchedules,
+      workCenter
+    );
+
+    if (returnedTimes) {
+      returnedTimes.forEach((updatedRow) => {
+        const productIndex = dataRef.current.products.findIndex(
+          (p) => p.id === updatedRow.id
+        );
+
+        if (productIndex !== -1) {
+          dataRef.current.products[productIndex] = updatedRow;
+          updatedRows.push(updatedRow);
+        }
+      });
     }
+
+    for (const updatedRow of updatedRows) {
+      await handleDataChange(productsTab, "update", updatedRow);
+    }
+
+    setState({ ...dataRef.current });
+  }
+
+
+  const processAllWorkCenters = async () => {
+
+    console.log("Products Populated", productsPopulated);
+    console.log("WorkCenterSchedules Populated", workCenterSchedulesPopulated);
+    if (!productsPopulated || !workCenterSchedulesPopulated) {
+      console.log("Not Populated");
+      return;
+    } else {
+      console.log("Populated");
+    }
+  
+    const workCenterDB: WorkCenter[] = workCenters.filter(
+      (workCenter) =>
+        workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
+    );
+  
+    // Calculate Schedule Start and End for each work center
+    const { products, workCenterSchedules } = dataRef.current;
+  
+    console.log("workCenterSchedules", workCenterSchedules);
+  
+    const updatedRows: ProductData[] = [];
+
+
+    for (const workCenter of workCenterDB) {
+      const returnedTimes = await calculateScheduleStartAndEnd(
+        products,
+        workCenterSchedules,
+        workCenter
+      );
+
+      console.log("Returned Times", returnedTimes);
+
+      if (returnedTimes) {
+        returnedTimes.forEach((updatedRow) => {
+          const productIndex = dataRef.current.products.findIndex(
+            (p) => p.id === updatedRow.id
+          );
+
+          if (productIndex !== -1) {
+            dataRef.current.products[productIndex] = updatedRow;
+            updatedRows.push(updatedRow);
+          }
+        });
+      }
+    }
+
+    // Push updates to the database
+    for (const updatedRow of updatedRows) {
+      await handleDataChange(productsTab, "update", updatedRow);
+    }
+
+    // Ensure state reflects the updated rows
+    setState({ ...dataRef.current });
   };
 
-
-
-  const syncGoogleSheetDataToDatabase = async (
-    data: string[][],
-    tab: TabOption
+  const handleDeleteRows = async (
+    tab: TabOption,
+    data: (ProductData | WorkCenterScheduleData | LedgerData)[]
   ) => {
-    if (!tab.columnDict || !tab.sqlTableName) {
-      addMessage({
-        type: "error",
-        message: "Missing column dictionary",
-        timestamp: new Date(),
-      });
-      return;
-    }
+    console.log("DELETING ROWS", tab, data);
     try {
-      const [headers, ...rows] = data;
-      const transformedData = rows.map((row) =>
-        headers.reduce((acc, header, index) => {
-          acc[header] = row[index];
-          return acc;
-        }, {} as Record<string, any>)
-      );
+      if (!tab.columnDict) {
+        console.error("Column dictionary not found for tab:", tab);
+        return;
+      }
 
-      if (transformedData.length > 0) {
-        await insertOrUpdateRecords(
-          db,
-          tab,
-          transformedData
+      if (tab.id === "products") {
+        dataRef.current.products = dataRef.current.products.filter(
+          (product) => !data.includes(product)
+        );
+      } else if (tab.id === "work_center_schedules") {
+        dataRef.current.workCenterSchedules =
+          dataRef.current.workCenterSchedules.filter(
+            (schedule) => !data.includes(schedule)
+          );
+      } else if (tab.id === "ledger") {
+        dataRef.current.ledger = dataRef.current.ledger.filter(
+          (entry) => !data.includes(entry)
         );
       }
 
-      const records = await fetchRecords(db, tab.sqlTableName);
-      if (tab.sqlTableName === "Products") {
-        setProductsData(records as ProductData[]);
-      } else if (tab.sqlTableName === "WorkCenterSchedule") {
-        setWorkCenterScheduleData(records as WorkCenterScheduleData[]);
-      } 
+      setState(dataRef.current); // Updates the state
+      setUpdatedAt(Date.now()); // Trigger a timestamp update
+
+      // Commit the changes
+      switch (tab.id) {
+        case "work_center_schedules":
+          await commitWorkCenterSchedulesSheet();
+          break;
+        case "ledger":
+          await commitLedgerSheet();
+          break;
+        default:
+          await commitProductsSheet();
+          break;
+      }
     } catch (error) {
-      console.error("Error syncing data to the database:", error);
+      console.error("Error during delete operation:", error);
     }
   };
+  const prepareGoogleSheetData = (
+    tab: TabOption,
+    data: (ProductData | WorkCenterScheduleData | LedgerData)[]
+  ): (string | null)[][] => {
+    if (!tab.columnDict) {
+      console.error("Column dictionary not found for tab:", tab);
+      return [];
+    }
 
+    const headers = [
+      "id",
+      ...Object.values(tab.columnDict)
+        .filter((col) => col.id !== "id")
+        .map((col) => String(col.googleSheetHeader)),
+    ];
 
+    console.log("Headers", headers);
 
-  /* ----------------- CRUD Operations ----------------- */
+    const rows = data.map((item) => {
+      return tab.columnDict
+        ? [
+            "id",
+            ...Object.values(tab.columnDict)
+              .filter((col) => col.id !== "id")
+              .map((col) => {
+                let value = item[col.id as keyof typeof item];
 
+                if (value === undefined || value === null) {
+                  value = item[col.googleSheetHeader as keyof typeof item];
+                }
+                return value !== undefined && value !== null
+                  ? String(value)
+                  : "N/A";
+              }),
+          ]
+        : [];
+    });
 
-  const deleteRecord = async (
-    rowId: string,
-    row: DataRowT,
-    tableName?: string
+    return [headers, ...rows];
+  };
+
+  const commitProductsSheet = async () => {
+    const productsData = prepareGoogleSheetData(
+      productsTab,
+      dataRef.current.products
+    );
+    console.log("productsData", productsData);
+    console.log("State products data", dataRef.current.products);
+    updateGoogleSheetData(
+      credentialsPath,
+      sheetIdentifier,
+      productsTab,
+      productsData
+    );
+  };
+
+  const commitWorkCenterSchedulesSheet = async () => {
+    const workCenterSchedulesData = prepareGoogleSheetData(
+      workCenterSchedulesTab,
+      dataRef.current.workCenterSchedules
+    );
+    console.log("workCenterSchedulesData", workCenterSchedulesData);
+    updateGoogleSheetData(
+      credentialsPath,
+      sheetIdentifier,
+      workCenterSchedulesTab,
+      workCenterSchedulesData
+    );
+  };
+
+  const commitLedgerSheet = async () => {
+    const ledgerData = prepareGoogleSheetData(
+      ledgersTab,
+      dataRef.current.ledger
+    );
+    console.log("ledgerData", ledgerData);
+    updateGoogleSheetData(
+      credentialsPath,
+      sheetIdentifier,
+      ledgersTab,
+      ledgerData
+    );
+  };
+
+  const contextValue = useMemo(
+    () => ({
+      state,
+      handleDataChange,
+      handleDeleteRows,
+      loading,
+      updatedAt, 
+      processAllWorkCenters,
+      processSpecificWorkCenter
+    }),
+    [state, loading, updatedAt] // Memoize with `updatedAt`
+  );
+
+  const seedDefaults = async (
+    tableDefaults: "Products" | "WorkCenterSchedules" | "Ledger"
   ) => {
-    try {
-      await db.execute(
-        `DELETE FROM ${
-          tableName ? tableName : selectedTab.sqlTableName
-        } WHERE id = ?`,
-        [rowId]
-      );
-      await refreshData();
-      addLocalSheetUpdate(selectedTab, "delete", row);
-    } catch (error) {
-      console.error("Error deleting record:", error);
+    switch (tableDefaults) {
+      case "Products":
+        if (!productsTab.columnDict) {
+          console.error("Column dictionary not found for tab:", productsTab);
+          return;
+        }
+
+        const defaultRow = getDefaultProductsRow();
+        dataRef.current.products = [defaultRow];
+
+        await commitProductsSheet();
+        break;
+      case "WorkCenterSchedules":
+        if (!workCenterSchedulesTab.columnDict) {
+          console.error(
+            "Column dictionary not found for tab:",
+            workCenterSchedulesTab
+          );
+          return;
+        }
+        const defaultWorkCenterSchedulesRow = getDefaultWorkCenterSchedules();
+        dataRef.current.workCenterSchedules = defaultWorkCenterSchedulesRow;
+
+        await commitWorkCenterSchedulesSheet();
+
+        break;
+      case "Ledger":
+        if (!ledgersTab.columnDict) {
+          console.error("Column dictionary not found for tab:", ledgersTab);
+          return;
+        }
+        const defaultLedgersRow = getDefaultLedgersRow();
+
+        dataRef.current.ledger = [defaultLedgersRow];
+
+        await commitLedgerSheet();
+
+        break;
     }
+    setState(dataRef.current);
   };
 
-  const updateRecord = async (
-    id: string,
-    updatedRecord: DataRowT,
-    tableName?: string
-  ) => {
-    console.log("Updating record:", updatedRecord);
-    try {
-      console.log("Updating record:", updatedRecord);
-      const columns = Object.keys(updatedRecord).map((col) => `"${col}" = ?`);
-      const updateSQL = `
-        UPDATE ${
-          tableName ? tableName : selectedTab.sqlTableName
-        } SET ${columns.join(", ")} WHERE id = ?;
-      `;
-      const values = Object.values(updatedRecord).concat([id]);
+  const transformRecords = async (
+    tab: TabOption,
+    records: string[][],
+    headers: string[]
+  ): Promise<DataRowT[]> => {
+    const transformedRecords = records.map((row) => {
+      const record: Partial<DataRowT> = {};
+      headers.forEach((header, index) => {
+        const column = Object.values(tab.columnDict!).find(
+          (col) =>
+            col.googleSheetHeader?.trim().toLowerCase() ===
+            header.trim().toLowerCase()
+        );
+        if (column) {
+          record[column.id] = row[index];
+        }
+      });
 
-      console.log("Update SQL:", updateSQL);
-      const response = await db.execute(updateSQL, values);
-      console.log("Update response:", response);
-      await refreshData();
-    } catch (error) {
-      console.error("Error updating record:", error);
-    }
-  };
+      // Assign a unique ID if not present
+      if (!record.id) {
+        record.id = uuidv4();
+      }
 
-  const addRecord = async (
-    newRecord: DataRowT,
-    tableName?: string
-  ) => {
+      return record as DataRowT;
+    });
 
-    console.log("Adding record:", newRecord);
-    try {
-      const columns = Object.keys(newRecord).map((col) => `"${col}"`);
-      const placeholders = Object.keys(newRecord)
-        .map(() => "?")
-        .join(", ");
-      const insertSQL = `
-        INSERT INTO ${
-          tableName ? tableName : selectedTab.sqlTableName
-        } (${columns.join(", ")}) VALUES (${placeholders});
-      `;
-      const values = Object.values(newRecord);
-      await db.execute(insertSQL, values);
-      await refreshData();
-    } catch (error) {
-      console.error("Error adding record:", error);
-    }
+    return transformedRecords;
   };
 
 
+
+  useEffect(() => {
+    const initialize = async () => {
+      setLoading(true);
+      if (isInitialized.current) return;
+      isInitialized.current = true;
+
+      try {
+        allTabs.forEach(async (tab) => {
+          if (tab.googleSheetName && tab.columnDict) {
+            const googleSheetData = await fetchGoogleSheetsData(
+              credentialsPath,
+              sheetIdentifier,
+              tab
+            );
+
+            if (googleSheetData) {
+              const headers = googleSheetData[0];
+              const records = googleSheetData.slice(1);
+
+              switch (tab.id) {
+                case "products":
+                  setProductsHeaders(headers);
+                  if (records.length === 0) {
+                    console.log("Seeding defaults for Products");
+                    await seedDefaults("Products");
+                  }
+                  const transformedProductRecords = await transformRecords(
+                    tab,
+                    records,
+                    headers
+                  );
+                  console.log("Transformed Records", transformedProductRecords);
+                  dataRef.current.products =
+                    transformedProductRecords as ProductData[];
+
+                  setProductsPopulated(true);
+                  break;
+                case "ledger": 
+                 setLedgerHeaders(headers);
+                  if (records.length === 0) {
+                    await seedDefaults("Ledger");
+                  }
+                  const transformedLedgerRecords = await transformRecords(
+                    tab,
+                    records,
+                    headers
+                  );
+                  dataRef.current.ledger =
+                    transformedLedgerRecords as LedgerData[];
+
+                    setLedgerPopulated(true);
+
+                  break;
+                case "work_center_schedules":
+                  setWorkCenterSchedulesHeaders(headers);
+                  if (records.length === 0) {
+                    await seedDefaults("WorkCenterSchedules");
+                  }
+                  const transformedRecords = await transformRecords(
+                    tab,
+                    records,
+                    headers
+                  );
+                  dataRef.current.workCenterSchedules =
+                    transformedRecords as WorkCenterScheduleData[];
+
+                  setWorkCenterSchedulesPopulated(true);
+                  break;
+              }
+              setState(dataRef.current);
+              setUpdatedAt(Date.now());
+            }
+          }
+        });
+      } catch (error) {
+        console.log(JSON.stringify(error), null, 2);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (
+      credentialsPath !== "loading" &&
+      credentialsPath !== "error" &&
+      sheetIdentifier !== "loading" &&
+      sheetIdentifier !== "error"
+    ) {
+      initialize();
+    }
+  }, [credentialsPath, sheetIdentifier]);
 
 
   return (
-    <DataContext.Provider
-      value={{
-        messages,
-        addMessage,
-        refreshData,
-        productsData,
-        workCenterScheduleData,
-        addLocalSheetUpdate,
-      }}
-    >
-      {children}
-    </DataContext.Provider>
+    <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>
   );
 };
 
-export const useData = () => useContext(DataContext);
+export const useData = () => {
+  const context = useContext(DataContext);
+  if (!context) {
+    throw new Error("useData must be used within a DataProvider");
+  }
+  return context;
+};

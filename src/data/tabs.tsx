@@ -1,95 +1,56 @@
-import { timeRangeToString, toTimeRange } from "../utils/time";
-import { generateColumnDict } from "../utils/generators";
-import { cutOptions, endsOptions, extrusionOptions, workCentersList, drawingOption, groundOptions } from "./lists";
+//import { timeRangeToString, toTimeRange } from "../utils/time";
+import {
+  cutOptions,
+  endsOptions,
+  extrusionOptions,
+  workCentersList,
+  drawingOption,
+  groundOptions,
+} from "./lists";
 import { removeAllWhiteSpace } from "../utils/regexFuncs";
 
+/* 
+
+Google SHeet Values to copy in case they get deleted
+
+Job Number	Customer	Text	Work Center	Quantity	Length	Production Quantity	Balance Quantity	Requested Ship Date	Requested Ship Time	Set Up	UPH	Cut	Extrusion	Ground	Drawing	Ends	Priority	Scheduled Start	Scheduled End 
+
+*/
+
 const renderBaseProductColumnDict = (
-  tab: "products" | "production_schedule"
+  tab:
+    | "products"
+    | "production_schedule"
+    | "work_center"
+    | "work_center_schedules"
+    | "ledger"
 ) => {
   const isProductsTab = tab === "products";
   const isProductionScheduleTab = tab === "production_schedule";
-
-  const editableTextBoxAppearance = {
-    backgroundColor: "bg-blue-200",
-  };
-  const editableNumberBoxAppearance = {
-    backgroundColor: "bg-green-200",
-  };
-
-  const editableDateFieldAppearance = {
-    backgroundColor: "bg-yellow-200",
-  };
-  const ediatbleTimeFieldAppearance = {
-    backgroundColor: "bg-pink-200",
-  };
-
-  const chevronOptionAppearance = {
-    backgroundColor: "bg-zinc-200",
-  };
-
-  const dropdownOptionAppearance = {
-    backgroundColor: "bg-blue-200",
-  };
-
-  const readOnlyTextBoxAppearance = {
-    backgroundColor: "bg-orange-200",
-  };
-  const readOnlyNumberBoxAppearance = {
-    backgroundColor: "bg-grpurpleay-200",
-  };
-
-  const readOnlyDateFieldAppearance = {
-    backgroundColor: "bg-red-200",
-  };
-  const readOnlyTimeFieldAppearance = {
-    backgroundColor: "bg-purple-200",
-  };
-
-  const editableOnClickTextBox = (
-    fieldLabel: string,
-    placeholder: string | number
-  ) => {
-    const isNumber = typeof placeholder === "number";
-    return {
-      onClickView: {
-        inputField: {
-          label: fieldLabel,
-          placeholder: placeholder,
-          type: isNumber ? ("number" as const) : ("text" as const),
-        },
-      },
-    };
-  };
-
-  const editableOnClickDropdownView = (
-    fieldLabel: string,
-    placeholder: string,
-    options: any[]
-  ) => {
-    return {
-      onClickView: {
-        dropdownField: {
-          label: fieldLabel,
-          placeholder,
-          options
-        },
-      },
-    };
-  };
+  //const isWorkCenterTab = tab === "work_center";
 
   const baseProductColumnDict: DataColumnDict = {
     Id: {
-      sqlTableHeader: "id",
+      id: "id",
       googleSheetHeader: null,
-      sqlText: "INTEGER PRIMARY KEY AUTOINCREMENT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
         headerFunction: "checkbox",
-        cellInfo: {
-          defaultView: "checkbox",
-          validations: {
-            nullable: false,
+        cell: {
+          view: {
+            readOnly: false,
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
           },
         },
         enableSorting: false,
@@ -97,428 +58,665 @@ const renderBaseProductColumnDict = (
       },
     },
     Job_Number: {
-      sqlText: "TEXT NOT NULL UNIQUE",
-      sqlTableHeader: "Job_Number",
+      id: "job_number",
       googleSheetHeader: "Job Number",
-      toSqlConverter: String,
-      toGoogleConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {
-            nullable: false,
+        headerFunction: "sort",
+        cell: {
+          view: {
+            readOnly: {
+              text: {},
+              styles: {
+                needsAttention: "border border-2 rounded-md border-purple-200",
+                error: "bg-red-200",
+              },
+            },
+            // If isProductsTab, allow editing otherwise editable = false
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: {
+                      labelIsValue: true,
+                      label: "Job Number...",
+                    },
+                  },
+                  editing: {
+                    textInput: {
+                      tooltip: "Enter the Product or Job Number.",
+                      placeholder: "PR123",
+                      requiresAttention: [
+                        {
+                          value: "isBlank",
+                          message: "Job number cannot be blank.",
+                          type: "error",
+                          prevent: ["save", "approval"],
+                          requires: ["update"],
+                        },
+                      ],
+                    },
+                    styles: {
+                      focus: "bg-blue-200 text-black",
+                      error: "bg-red-500",
+                    },
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab &&
-            editableOnClickTextBox("Job Number", "Job Number")),
-          appearance: isProductsTab
-            ? editableTextBoxAppearance
-            : readOnlyTextBoxAppearance,
+          value: {
+            type: "text",
+            default: "",
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Customer: {
-      sqlText: "TEXT NOT NULL",
-      sqlTableHeader: "Customer",
+      id: "customer",
       googleSheetHeader: "Customer",
-      toSqlConverter: String,
-      toGoogleConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {
-            nullable: false,
+        headerFunction: "sort",
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: { label: "Customer...", labelIsValue: true },
+                    styles: {},
+                  },
+                  editing: {
+                    textInput: { placeholder: "Enter Customer" },
+                    styles: {},
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab && editableOnClickTextBox("Customer", "Customer")),
-          appearance: isProductsTab
-            ? editableTextBoxAppearance
-            : readOnlyTextBoxAppearance,
+          value: {
+            type: "text",
+            default: "",
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Text: {
-      sqlText: "TEXT",
-      sqlTableHeader: "Text",
+      id: "text",
       googleSheetHeader: "Text",
-      toSqlConverter: String,
-      toGoogleConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {
-            nullable: false,
+        headerFunction: "sort",
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: { label: "Edit Text", labelIsValue: true },
+                    styles: {},
+                  },
+                  editing: {
+                    textInput: { placeholder: "Enter Text" },
+                    styles: {},
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab &&
-            editableOnClickTextBox("Text", "Product Description...")),
-          appearance: isProductsTab
-            ? editableTextBoxAppearance
-            : readOnlyTextBoxAppearance,
+          value: {
+            type: "text",
+            default: "",
+            nullable: true,
+          },
         },
       },
     },
     Work_Center: {
-      sqlText: "TEXT NOT NULL",
-      sqlTableHeader: "Work_Center",
+      id: "work_center",
       googleSheetHeader: "Work Center",
-      toSqlConverter: String,
-      toGoogleConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {
-          
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: {
+                      label: "Select Work Center...",
+                      labelIsValue: true,
+                    },
+                    styles: {},
+                  },
+                  editing: {
+                    dropdown: {
+                      placeholder: "Select a Work Center...",
+                      items: workCentersList,
+                      label: "Select",
+                    },
+                    styles: {},
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab &&
-            editableOnClickDropdownView("Work Center", "Work Center...", workCentersList)),
-          appearance: isProductsTab
-            ? editableTextBoxAppearance
-            : readOnlyTextBoxAppearance,
+          value: {
+            type: "text",
+            default: workCentersList[0] ?? "UNASSIGNED",
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Quantity: {
-      sqlText: "INTEGER NOT NULL",
-      sqlTableHeader: "Quantity",
+      id: "quantity",
       googleSheetHeader: "Quantity",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          newItemValue: 0,
-          ...(isProductsTab
-            ? {
-                viewOptions: {
-                  chevronOptions: {
-                    step: 10,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+            editable: isProductsTab
+              ? {
+                  default: { chevron: { min: 0, stepCount: 5 }, styles: {} },
+                  editing: {
+                    numberInput: { placeholder: 0, min: 0 },
+                    styles: {},
                   },
-                },
-              }
-            : {}), 
-          validations: {
-            nullable: false,
+                }
+              : false,
           },
-          ...(isProductsTab && editableOnClickTextBox("Quantity", 0)),
-          appearance: isProductsTab
-            ? editableNumberBoxAppearance
-            : readOnlyNumberBoxAppearance,
+          value: {
+            type: "number",
+            default: 0,
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Length: {
-      sqlText: "INTEGER",
-      sqlTableHeader: "Length",
+      id: "length",
       googleSheetHeader: "Length",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          newItemValue: 0,
-          ...(isProductsTab
-            ? {
-                viewOptions: {
-                  chevronOptions: {
-                    step: 10,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+
+            editable: isProductsTab
+              ? {
+                  default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
+                  editing: {
+                    numberInput: { placeholder: 0, min: 0 },
+                    styles: {},
                   },
-                },
-              }
-            : {}), 
-          validations: {
-            nullable: false,
+                }
+              : false,
           },
-          ...(isProductsTab && editableOnClickTextBox("Length", 0)),
-          appearance: isProductsTab
-            ? editableNumberBoxAppearance
-            : readOnlyNumberBoxAppearance,
+          value: {
+            type: "number",
+            default: 0,
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
-    Product_Quantity: {
-      sqlText: "INTEGER CHECK (Product_Quantity >= 0)",
-      sqlTableHeader: "Product_Quantity",
-      googleSheetHeader: "Product Quantity",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+    Production_Quantity: {
+      id: "production_quantity",
+      googleSheetHeader: "Production Quantity",
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          newItemValue: 0,
-          ...(isProductsTab
-            ? {
-                viewOptions: {
-                  chevronOptions: {
-                    step: 10,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+            editable: isProductsTab
+              ? {
+                  default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
+                  editing: {
+                    numberInput: { placeholder: 0, min: 0 },
+                    styles: {},
                   },
-                },
-              }
-            : {}), 
-          validations: {
-            nullable: false,
+                }
+              : false,
           },
-          ...(isProductsTab &&
-            editableOnClickTextBox("Production Quantity", 0)),
-          appearance: isProductsTab
-            ? editableNumberBoxAppearance
-            : readOnlyNumberBoxAppearance,
+          value: {
+            type: "number",
+            default: 0,
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Balance_Quantity: {
-      sqlText:
-        "INTEGER CHECK (Balance_Quantity >= 0 AND Balance_Quantity <= Product_Quantity)",
-      sqlTableHeader: "Balance_Quantity",
+      id: "balance_quantity",
       googleSheetHeader: "Balance Quantity",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          newItemValue: 0,
-          viewOptions: {
-            chevronOptions: {
-              step: 10,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+            editable: {
+              default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
+              editing: { numberInput: { placeholder: 0, min: 0 }, styles: {} },
             },
           },
-          validations: {
+          value: {
+            type: "number",
+            default: 0,
             nullable: false,
+            required: true,
           },
-          ...editableOnClickTextBox("Balance Quantity", 0),
-          appearance: chevronOptionAppearance,
         },
       },
     },
     Requested_Ship_Date: {
-      sqlTableHeader: "Requested_Ship_Date",
+      id: "requested_ship_date",
       googleSheetHeader: "Requested Ship Date",
-      sqlText: "DATE",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "date",
-          newItemValue:  new Date().toISOString().split('T')[0] as "YYYY-MM-DD",
-          validations: {
-            nullable: false,
+        cell: {
+          view: {
+            readOnly: {
+              date: {
+                format: {
+                  delimiter: "/",
+                  month: "short",
+                  day: "DD",
+                  year: "YYYY",
+                },
+              },
+            },
+
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: {
+                      labelIsValue: true,
+                      label: "Select Date...",
+                    },
+                  },
+                  editing: {
+                    popup: {
+                      content: {
+                        calendar: {},
+                      },
+                    },
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab &&
-            editableOnClickTextBox("Requested Ship Date", "YYYY-MM-DD")),
-          appearance: isProductsTab
-            ? editableDateFieldAppearance
-            : readOnlyDateFieldAppearance,
+          value: {
+            type: "date",
+            default: new Date(),
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     Requested_Ship_Time: {
-      sqlTableHeader: "Requested_Ship_Time",
+      id: "requested_ship_time",
       googleSheetHeader: "Requested Ship Time",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "time",
-          validations: {},
-          newItemValue: { hour: 0, minute: 0 },
-          ...(isProductsTab &&
-            editableOnClickTextBox("Requested Ship Time", "HH:MM")),
-          appearance: isProductsTab
-            ? ediatbleTimeFieldAppearance : readOnlyTimeFieldAppearance,
+        cell: {
+          view: {
+            readOnly: {
+              time: {},
+            },
+
+            editable: isProductsTab
+              ? {
+                  default: {
+                    button: {
+                      labelIsValue: true,
+                      label: "Select Time...",
+                    },
+                  },
+                  editing: {
+                    popup: {
+                      content: {
+                        timepicker: {},
+                      },
+                    },
+                  },
+                }
+              : false,
+          },
+          value: {
+            type: "time",
+            default: "00:00",
+            nullable: false,
+            required: false,
+          },
         },
       },
     },
     Set_Up: {
-      sqlTableHeader: "Set_Up",
-      googleSheetHeader: "Set Up (min)",
-      sqlText: "INTEGER CHECK (Set_Up >= 0)",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+      id: "set_up",
+      googleSheetHeader: "Set Up",
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          validations: {},
-          newItemValue: 120,
-          ...(isProductsTab
-            ? {
-                viewOptions: {
-                  chevronOptions: {
-                    step: 10,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+
+            editable: isProductsTab
+              ? {
+                  default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
+                  editing: {
+                    numberInput: { placeholder: 0, min: 0 },
+                    styles: {},
                   },
-                },
-              }
-            : {}), 
-          ...(isProductsTab && editableOnClickTextBox("Set Up", 0)),
-          appearance: isProductsTab
-            ? editableNumberBoxAppearance
-            : readOnlyNumberBoxAppearance,
+                }
+              : false,
+          },
+          value: {
+            type: "number",
+            default: 120,
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
     UPH: {
-      sqlTableHeader: "UPH",
-      googleSheetHeader: "UPH (units/hour)",
-      sqlText: "INTEGER CHECK (UPH >= 0)",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
+      id: "uph",
+      googleSheetHeader: "UPH",
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "number",
-          validations: {},
-          newItemValue: 10,
-          viewOptions: {
-            chevronOptions: {
-              step: 1,
-            },
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+
+            editable: isProductsTab
+              ? {
+                  default: { chevron: { min: 0, stepCount: 1 }, styles: {} },
+                  editing: {
+                    numberInput: { placeholder: 0, min: 0 },
+                    styles: {},
+                  },
+                }
+              : false,
           },
-          ...(isProductsTab && editableOnClickTextBox("UPH", 0)),
-          appearance: isProductsTab
-            ? editableNumberBoxAppearance
-            : readOnlyNumberBoxAppearance,
+          value: {
+            type: "number",
+            default: 10,
+            nullable: false,
+            required: true,
+          },
         },
       },
     },
-    ...(isProductionScheduleTab && {
-      Priority: {
-        sqlTableHeader: "Priority",
-        googleSheetHeader: "Priority",
-        sqlText: "INTEGER CHECK (Priority >= 0)",
-        toSqlConverter: Number,
-        toGoogleConverter: String,
-        columnDef: {
-          cellInfo: {
-            defaultView: "number",
-            nullValue: 999,
-            newItemValue: 999,
-            validations: {
-              nullable: false,
-            },
-            onClickView: {
-              priorityPopup: {},
-            },
-          },
-        },
-      },
-      Scheduled_Start: {
-        sqlTableHeader: "Scheduled_Start",
-        googleSheetHeader: "Scheduled Start",
-        sqlText: "DATE CHECK (Scheduled_Start < Scheduled_End)",
-        toSqlConverter: Date,
-        toGoogleConverter: String,
-        columnDef: {
-          cellInfo: {
-            defaultView: "date",
-            validations: {},
-          },
-        },
-      },
-      Scheduled_End: {
-        sqlTableHeader: "Scheduled_End",
-        googleSheetHeader: "Scheduled End",
-        sqlText: "DATE CHECK (Scheduled_End > Scheduled_Start)",
-        toSqlConverter: Date,
-        toGoogleConverter: String,
-        columnDef: {
-          cellInfo: {
-            defaultView: "date",
-            validations: {},
-          },
-        },
-      },
-    }),
-    Cut: {
-      sqlTableHeader: "Cut",
-      googleSheetHeader: "Cut",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+    Priority: {
+      id: "priority",
+      googleSheetHeader: "Priority",
+      //toSqlConverter: Number,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {},
-          newItemValue: "_",
-          ...editableOnClickDropdownView
-          ("Cut", "Cut...", cutOptions),
-          appearance: dropdownOptionAppearance,
+        cell: {
+          view: {
+            readOnly: { number: {}, styles: {} },
+            editable: !isProductsTab
+              ? {
+                  default: {
+                    button: {
+                      labelIsValue: true,
+                      label: "Select Priority...",
+                    },
+                  },
+                  editing: {
+                    popup: {
+                      content: {
+                        priority: {},
+                      },
+                    },
+                  },
+                }
+              : false,
+          },
+          value: {
+            type: "number",
+            default: 0,
+            nullable: false,
+            required: true,
+          },
+        },
+      },
+    },
+    Scheduled_Start: {
+      id: "scheduled_start",
+      googleSheetHeader: "Scheduled Start",
+      //toSqlConverter: Date,
+      columnDef: {
+        viewable: !isProductsTab,
+        cell: {
+          view: {
+            readOnly: {
+              date: {
+                format: {
+                  delimiter: "/",
+                  month: "short",
+                  day: "DD",
+                  year: "YYYY",
+                },
+              },
+            },
+            editable: false,
+          },
+          value: {
+            type: "date",
+            default: new Date(),
+          },
+        },
+      },
+    },
+    Scheduled_End: {
+      id: "scheduled_end",
+      googleSheetHeader: "Scheduled End",
+      //toSqlConverter: Date,
+      columnDef: {
+        viewable: !isProductsTab,
+        cell: {
+          view: {
+            readOnly: {
+              date: {
+                format: {
+                  delimiter: "/",
+                  month: "short",
+                  day: "DD",
+                  year: "YYYY",
+                },
+              },
+            },
+            editable: false,
+          },
+          value: {
+            type: "date",
+            default: new Date(9999),
+          },
+        },
+      },
+    },
+    Cut: {
+      id: "cut",
+      googleSheetHeader: "Cut",
+      //toSqlConverter: String,
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Cut...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Cut...",
+                        items: cutOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: cutOptions[0],
+
+            nullable: true,
+          },
         },
       },
     },
     Extrusion: {
-      sqlTableHeader: "Extrusion",
+      id: "extrusion",
       googleSheetHeader: "Extrusion",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          newItemValue: "_",
-          validations: {},
-          ...editableOnClickDropdownView(
-            "Extrusion",
-            "Extrusion...",
-            extrusionOptions
-          ),
-          appearance: dropdownOptionAppearance,
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Extrusion...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Extrusion...",
+                        items: extrusionOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: extrusionOptions[0],
+
+            nullable: true,
+          },
         },
       },
     },
     Ground: {
-      sqlTableHeader: "Ground",
+      id: "ground",
       googleSheetHeader: "Ground",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          newItemValue: "_",
-          validations: {},
-          ...editableOnClickDropdownView(
-            "Ground",
-            "Ground...",
-            groundOptions
-          ),
-          appearance: dropdownOptionAppearance,
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Ground...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Ground...",
+                        items: groundOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: groundOptions[0],
+
+            nullable: true,
+          },
         },
       },
     },
     Drawing: {
-      sqlTableHeader: "Drawing",
+      id: "drawing",
       googleSheetHeader: "Drawing",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          newItemValue: "_",
-          validations: {},
-          ...editableOnClickDropdownView(
-            "Drawing",
-            "Drawing...",
-            drawingOption
-          ),
-          appearance: dropdownOptionAppearance,
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Drawing...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Drawing...",
+                        items: drawingOption,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: drawingOption[0],
+
+            nullable: true,
+          },
         },
       },
     },
     Ends: {
-      sqlTableHeader: "Ends",
+      id: "ends",
       googleSheetHeader: "Ends",
-      sqlText: "TEXT",
-      toSqlConverter: String,
-      toGoogleConverter: String,
+      //toSqlConverter: String,
       columnDef: {
-        cellInfo: {
-          defaultView: "string",
-          validations: {},
-          newItemValue: "_",
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Ends...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Ends...",
+                        items: endsOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: endsOptions[0],
 
-          ...editableOnClickDropdownView(
-            "Ends",
-            "Ends...",
-            endsOptions
-          ),
-          appearance: dropdownOptionAppearance,
+            nullable: true,
+          },
         },
       },
     },
@@ -530,125 +728,287 @@ const renderBaseProductColumnDict = (
 export const productsTab: TabOption = {
   id: "products",
   name: "Products",
-  fetchFrom: "google",
-  sqlTableName: "Products",
+  //googleSheetName: "google",
+  //sqlTableName: "Products",
   googleSheetName: "Products",
   columnDict: renderBaseProductColumnDict("products"),
+  columnData: null
 };
 
-export const workCenterScheduleTab: TabOption = {
-  id: "work_center_schedules",
-  name: "Work Center Schedule",
-  fetchFrom: "google",
-  sqlTableName: "WorkCenterSchedule",
-  googleSheetName: "Work Center Schedule",
-  columnDict: {
-    Date_Weekday_Holiday: {
-      sqlText: "TEXT NOT NULL", // Store as TEXT since the column handles mixed formats
-      sqlTableHeader: "Date_Weekday_Holiday",
-      googleSheetHeader: "Date / Weekday / Holiday",
-      toSqlConverter: (value: string): string => {
-        // Normalize and validate the value
-        const weekdayRegex =
-          /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i;
-        const mmddRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // MM-DD
-        const yyyymmddRegex =
-          /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // YYYY-MM-DD
-
-        if (weekdayRegex.test(value)) {
-          // It's a weekday, store as-is
-          return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); // Capitalize
-        } else if (mmddRegex.test(value)) {
-          // It's an MM-DD holiday
-          return value; // Store in MM-DD format
-        } else if (yyyymmddRegex.test(value)) {
-          // It's a specific date (YYYY-MM-DD)
-          return value; // Store in YYYY-MM-DD format
-        } else {
-          // Invalid format
-          throw new Error(`Invalid Date_Weekday_Holiday value: ${value}`);
-        }
+const generateColumnDict = (workCenters: string[]) => {
+  return workCenters.reduce((dict, center) => {
+    const key = removeAllWhiteSpace(center);
+    dict[key] = {
+      id: key,
+      googleSheetHeader: center as GoogleSheetHeader,
+      //toSqlConverter: toTimeRange,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
       },
-      toGoogleConverter: String, // No special transformation required for Google Sheets
-      columnDef: {},
+    };
+    return dict;
+  }, {} as DataColumnDict);
+};
+
+export const workCenterSchedulesTab: TabOption = {
+  id: "work_center_schedules",
+  name: "Work Center Schedules",
+  googleSheetName: "Work Center Schedules",
+  //sqlTableName: "WorkCenterSchedules",
+  //googleSheetName: "Work Center Schedules",
+  columnDict: {
+    Id: {
+      id: "id",
+      googleSheetHeader: null,
+      //toSqlConverter: String,
+      columnDef: {
+        headerFunction: "checkbox",
+        cell: {
+          view: {
+            readOnly: false,
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
+          },
+        },
+        enableSorting: false,
+        enableHiding: false,
+      },
+    },
+    Date_Weekday_Holiday: {
+      id: "date_weekday_holiday",
+      googleSheetHeader: "Date / Weekday / Holiday",
+      //toSqlConverter: (value: string): string => {
+        // Normalize and validate the value
+      //   const weekdayRegex =
+      //     /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i;
+      //   const mmddRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // MM-DD
+      //   const yyyymmddRegex =
+      //     /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // YYYY-MM-DD
+
+      //   if (weekdayRegex.test(value)) {
+      //     // It's a weekday, store as-is
+      //     return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); // Capitalize
+      //   } else if (mmddRegex.test(value)) {
+      //     // It's an MM-DD holiday
+      //     return value; // Store in MM-DD format
+      //   } else if (yyyymmddRegex.test(value)) {
+      //     // It's a specific date (YYYY-MM-DD)
+      //     return value; // Store in YYYY-MM-DD format
+      //   } else {
+      //     // Invalid format
+      //     throw new Error(`Invalid Date_Weekday_Holiday value: ${value}`);
+      //   }
+      // },
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
     ...generateColumnDict(workCentersList),
   },
+  columnData: null
 };
 
 export const ledgersTab: TabOption = {
   id: "ledger",
   name: "Ledger",
-  fetchFrom: "sql",
-  sqlTableName: "Ledger",
-  requiredSqlTables: [workCenterScheduleTab],
+  //googleSheetName: "google",
+  //sqlTableName: "Ledger",
   googleSheetName: "Ledger",
   columnDict: {
     Id: {
-      sqlText: "INTEGER PRIMARY KEY AUTOINCREMENT",
-      sqlTableHeader: "ID",
+      id: "id",
       googleSheetHeader: null,
-      toSqlConverter: String,
-      toGoogleConverter: String,
-      columnDef: {},
+      //toSqlConverter: String,
+      columnDef: {
+        headerFunction: "checkbox",
+        cell: {
+          view: {
+            readOnly: false,
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
+          },
+        },
+        enableSorting: false,
+        enableHiding: false,
+      },
     },
     Date: {
-      sqlText: "DATE NOT NULL",
-      sqlTableHeader: "Date",
+      id: "date",
       googleSheetHeader: "Date",
-      toSqlConverter: Date,
-      toGoogleConverter: String,
-      columnDef: {},
+      //toSqlConverter: Date,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
-    Time: {
-      sqlText: "TEXT NOT NULL",
-      sqlTableHeader: "Time",
-      googleSheetHeader: "Time",
-      toSqlConverter: toTimeRange,
-      toGoogleConverter: timeRangeToString,
-      columnDef: {},
+    Start: {
+      id: "start",
+      googleSheetHeader: "Start",
+      //toSqlConverter: toTimeRange,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
+    },
+    End: {
+      id: "end",
+      googleSheetHeader: "End",
+      //toSqlConverter: toTimeRange,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
     Work_Center: {
-      sqlText: "TEXT NOT NULL",
-      sqlTableHeader: "Work_Center",
+      id: "work_center",
       googleSheetHeader: "Work Center",
-      toSqlConverter: String,
-      toGoogleConverter: String,
-      columnDef: {},
+      //toSqlConverter: String,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
     On: {
-      sqlText: "TEXT NOT NULL",
-      sqlTableHeader: "On",
-      googleSheetHeader: "On (min)",
-      toSqlConverter: Number,
-      toGoogleConverter: String,
-      columnDef: {},
+      id: "on",
+      googleSheetHeader: "On",
+      //toSqlConverter: Number,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
     Notes: {
-      sqlText: "TEXT",
-      sqlTableHeader: "Notes",
+      id: "notes",
       googleSheetHeader: "Notes",
-      toSqlConverter: String,
-      toGoogleConverter: String,
-      columnDef: {},
+      //toSqlConverter: String,
+      columnDef: {
+        enableHiding: true,
+        enableSorting: true,
+        cell: {
+          view: {
+            readOnly: { text: {} },
+            editable: false,
+          },
+          value: {
+            type: "text",
+            default: "",
+          },
+        },
+      },
     },
   },
+  columnData: null
 };
 
 export const productionScheduleTab: TabOption = {
   id: "production_schedule",
   name: "Production Schedule",
-  fetchFrom: "sql",
-  sqlTableName: "ProductionSchedule",
-  requiredSqlTables: [productsTab, workCenterScheduleTab],
-  googleSheetName: "Production Schedule",
+  //googleSheetName: "sql",
+  //sqlTableName: "ProductionSchedule",
+  googleSheetName: null,
   columnDict: renderBaseProductColumnDict("production_schedule"),
+  columnData: null
 };
 
 const settingsTab: TabOption = {
   id: "settings",
   name: "Settings",
-  sqlTableName: "Settings",
+  //sqlTableName: "Settings",
+  googleSheetName: null,
+  columnData: null,
+  columnDict: null
 };
 
 const generateWorkCenterTab = (workCenter: string): TabOption => {
@@ -660,32 +1020,11 @@ const generateWorkCenterTab = (workCenter: string): TabOption => {
   return {
     id: simpleId as TabId,
     name: workCenter,
-    fetchFrom: "sql",
+    googleSheetName: null,
     isWorkCenter: true,
-    sqlTableName: removeAllWhiteSpace(workCenter),
-    requiredSqlTables: [
-      productsTab,
-      workCenterScheduleTab,
-      productionScheduleTab,
-    ],
-    columnDict: {
-      Id: {
-        sqlText: "INTEGER PRIMARY KEY AUTOINCREMENT",
-        sqlTableHeader: "ID",
-        googleSheetHeader: null,
-        toSqlConverter: String,
-        toGoogleConverter: String,
-        columnDef: {},
-      },
-      Production_Schedule_Id: {
-        sqlText: "INTEGER NOT NULL REFERENCES ProductionSchedule(Id)",
-        sqlTableHeader: "Production_Schedule_ID",
-        googleSheetHeader: null,
-        toSqlConverter: String,
-        toGoogleConverter: String,
-        columnDef: {},
-      },
-    },
+    //sqlTableName: removeAllWhiteSpace(workCenter),
+    columnDict: renderBaseProductColumnDict("work_center"),
+    columnData: null
   };
 };
 
@@ -693,13 +1032,22 @@ export const workCenterTabs = workCentersList.map((workCenter) =>
   generateWorkCenterTab(workCenter)
 );
 
+export const allTabs = [
+  productsTab,
+  productionScheduleTab,
+  workCenterSchedulesTab,
+  ledgersTab,
+  ...workCenterTabs,
+  settingsTab,
+];
+
 export const sidebarTabGroups: SidebarTabGroup[] = [
   {
     groupHeader: "Main",
     groupTabs: [
       productsTab,
       productionScheduleTab,
-      workCenterScheduleTab,
+      workCenterSchedulesTab,
       ledgersTab,
     ],
   },

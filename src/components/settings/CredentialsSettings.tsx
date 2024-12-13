@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useCredentials } from "../../context/CredentialProvider";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 
 const CredentialsSettings = () => {
   const { credentialsPath, addCredentialsPath } =

@@ -16,8 +16,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { withTimeout } from "../lib/withTimeout";
 import { invoke } from "@tauri-apps/api/core";
-import Database from "@tauri-apps/plugin-sql";
-
+//import Database from "@tauri-apps/plugin-sql";
 
 type CredentialsType = {
   credentialsPath: string | LoadingState;
@@ -25,11 +24,10 @@ type CredentialsType = {
   appDirectoryPath: string | LoadingState;
   allIdentifiers: string[];
   testOutput: string | null;
-  db: Database | null;
+  //db: Database | null;
   addCredentialsPath: () => void;
   addIdentifier: (identifier: string) => void;
   handleSelectIdentifier: (selectedIdentifier: string) => void;
-  
 };
 
 // Default values for context
@@ -39,11 +37,10 @@ const defaultCredentials: CredentialsType = {
   appDirectoryPath: "loading",
   allIdentifiers: [],
   testOutput: null,
-  db: null,
+  //db: null,
   addCredentialsPath: () => {},
   addIdentifier: () => {},
   handleSelectIdentifier: () => {},
-  
 };
 
 // Create Context
@@ -63,13 +60,13 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     string | LoadingState
   >("loading");
   const [store, setStore] = useState<Store | null>(null);
-  const [db, setDb] = useState<Database | null>(null)
+  //const [db, setDb] = useState<Database | null>(null);
 
   const STORE = {
     STORE_NAME: "rods-sheets.Credentials.json",
     IDENTIFIERS: "identifiers",
     LAST_USED_IDENTIFIER: "selectedIdentifier",
-    DB_NAME: "rods-sheets2.db",
+    //DB_NAME: "rods-sheets2.db",
   };
 
   const CREDENTIALS_FILENAME = "credentials.json";
@@ -84,14 +81,14 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    const initializeDatabase = async () => {
-      try {
-        const db = await setUpDb(STORE.DB_NAME);
-        setDb(db);
-      } catch {
-        setDb(null);
-      }
-    }
+    // const initializeDatabase = async () => {
+    //   try {
+    //     const db = await setUpDb(STORE.DB_NAME);
+    //     setDb(db);
+    //   } catch {
+    //     setDb(null);
+    //   }
+    // };
 
     const initializeStore = async () => {
       try {
@@ -105,8 +102,8 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
       try {
         await initializeAppDirectory();
         await initializeStore();
-        await initializeDatabase();
-        console.log("App Directory, Store and Database initialized.");
+       // await initializeDatabase();
+
         checkForCredentialsPath();
         checkForIdentifiers();
       } catch (e) {
@@ -119,14 +116,12 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (typeof appDirectoryPath === "string") {
-      console.log("Checking for credentials path...");
       checkForCredentialsPath();
     }
   }, [appDirectoryPath]);
 
   useEffect(() => {
     if (store) {
-      console.log("Checking for identifiers...");
       checkForIdentifiers();
     }
   }, [store]);
@@ -136,10 +131,8 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     const appDataDirExists = await exists(appDataDirPath);
 
     if (!appDataDirExists) {
-      console.log("Creating app data directory");
       await mkdir(appDataDirPath, { recursive: true });
     } else {
-      console.log("App data directory already exists");
     }
 
     setAppDirectoryPath(appDataDirPath);
@@ -150,19 +143,17 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     setStore(store);
   };
 
-  const setUpDb = async(
-    dbName: string
-  ) => {
-    try {
-      // Load or create a database file
-      const db = await Database.load(`sqlite:${dbName}`); 
-      console.log("Database connected!");
-      return db;
-    } catch (error) {
-      console.error("Error initializing database:", error);
-      throw error;
-    }
-  }
+  // const setUpDb = async (dbName: string) => {
+  //   try {
+  //     // Load or create a database file
+  //     const db = await Database.load(`sqlite:${dbName}`);
+
+  //     return db;
+  //   } catch (error) {
+  //     console.error("Error initializing database:", error);
+  //     throw error;
+  //   }
+  // };
 
   const checkForCredentialsPath = async () => {
     if (appDirectoryPath === "loading") {
@@ -300,9 +291,6 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     testAuth();
   }, [credentialsPath, sheetIdentifier]);
 
-
-  
-
   return (
     <Credentials.Provider
       value={{
@@ -311,10 +299,10 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
         appDirectoryPath,
         allIdentifiers,
         testOutput,
-        db,
+        //db,
         addCredentialsPath,
         addIdentifier,
-        handleSelectIdentifier
+        handleSelectIdentifier,
       }}
     >
       <div>{children}</div>

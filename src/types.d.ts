@@ -2,23 +2,18 @@ type LoadingState = "loading" | "error";
 
 type DataTableT =
   | ProductData[]
-  | ProductionScheduleData[]
   | WorkCenterScheduleData[]
-  | WorkCenterData[]
-  | LedgerData[]
+  | LedgerData[];
 
 type DataRowT =
   | ProductData
-  | ProductionScheduleData
   | WorkCenterScheduleData
-  | WorkCenterData
-  | LedgerData 
+  | LedgerData;
 
 type EditingCell = {
-  row: Row<DataRowT>;
+  row: DataRowT;
+  newRow?: DataRowT
   columnId: string;
-  initialValue: any;
-  newValue: any;
 };
 
 type LocalSheetUpdate = {
@@ -26,23 +21,31 @@ type LocalSheetUpdate = {
   updatedLocallyAt: Date;
   undo: boolean;
   type: "update" | "delete" | "add";
-  row: DataRowT
-  prevRow?: DataRowT
+  row: DataRowT;
+  prevRow?: DataRowT;
 };
 
-type SqlSheetUpdate = LocalSheetUpdate & {
-  updatedSqlAt: Date | null;
-};
+// type SqlSheetUpdate = LocalSheetUpdate & {
+//   updatedSqlAt: Date | null;
+// };
 
-type FinalizedSheetUpdate = SqlSheetUpdate & {
+type FinalizedSheetUpdate = LocalSheetUpdate & {
   updatedGoogleAt: Date | null;
 };
 
-type DateFormat = "YYYY-MM-DD";
-type TimeFormat = {
-  hour: number;
-  minute: number;
+type CellFuncs = {
+  handleImmediateCellUpdate: (value: string) => void;
+  handleSetCellToEditing: () => void;
+  handleCellUpdate: (value: string) => void;
+  handleFinishEditing: () => void;
+  cellEditingCancelled: () => void;
 };
+
+type Date = "YYYY-MM-DD";
+// type string = {
+//   hour: number;
+//   minute: number;
+// };
 
 type SidebarTabGroup = {
   groupHeader: string;
@@ -81,120 +84,305 @@ type TabOption = {
   id: TabId;
   isWorkCenter?: boolean;
   name: string;
-  fetchFrom?: "sql" | "google";
-  sqlTableName: string;
-  requiredSqlTables?: TabOption[];
-  googleSheetName?: string;
-  columnDict?: DataColumnDict;
-  columnData?: DataRowT
+  googleSheetName: string | null
+  columnDict: DataColumnDict | null
+  columnData: DataRowT | null
 };
+
+type GoogleSheetHeader =
+  | "Work Center"
+  | "Job Number"
+  | "Customer"
+  | "Text"
+  | "Quantity"
+  | "Length"
+  | "Production Quantity"
+  | "Requested Ship Date"
+  | "Requested Ship Time"
+  | "Set Up"
+  | "UPH"
+  | "Cut"
+  | "Extrusion"
+  | "Ground"
+  | "Drawing"
+  | "Ends"
+  | "Balance Quantity"
+  | "Priority"
+  | "Scheduled Start"
+  | "Scheduled End"
+  // Schedule Data
+  | "Date / Weekday / Holiday"
+  | "Date"
+  | "Time"
+  | "Notes"
+  | "Start"
+  | "End"
+  | "On";
+
+// type SqlTableHeader =
+//   | "id"
+//   | "work_center"
+//   | "job_number"
+//   | "customer"
+//   | "text"
+//   | "quantity"
+//   | "length"
+//   | "production_quantity"
+//   | "requested_ship_date"
+//   | "requested_ship_time"
+//   | "set_up"
+//   | "uph"
+//   | "cut"
+//   | "extrusion"
+//   | "ground"
+//   | "drawing"
+//   | "ends"
+//   | "balance_quantity"
+//   | "priority"
+//   | "scheduled_start"
+//   | "scheduled_end"
+//   // Schedule Data
+//   | "date_weekday_holiday"
+//   | "date"
+//   | "time"
+//   | "start"
+//   | "end"
+//   | "notes"
+//   | "on";
+
+type Conditionals =
+  | "is"
+  | "isNot"
+  | "contains"
+  | "doesNotContain"
+  | "isBefore"
+  | "isAfter"
+  | "isOn"
+  | "isNotOn"
+  | "isIn"
+  | "isNotIn"
+  | "isBetween"
+  | "isNotBetween"
+  | "isLessThan"
+  | "isLessThanOrEqualTo"
+  | "isGreaterThan"
+  | "isGreaterThanOrEqualTo"
+  | "isTrue"
+  | "isFalse"
+  | "isBlank"
+  | "isNotBlank";
+
+type FieldType =
+  | "range"
+  | "minimum"
+  | "maximum"
+  | "value"
+  | "values"
+  | "date"
+  | "time"
+  | "datetime"
+  | "dateRange"
+  | "timeRange"
+  | "number"
+  | "numberRange"
+  | "list";
+
+type UserActions =
+  | "save"
+  | "delete"
+  | "update"
+  | "confirmation"
+  | "approval"
+  | "validation";
+
+type RequiresAttentionItem = Partial<Record<FieldType, Conditionals>> & {
+  message: string;
+  prevent: UserActions[];
+  type: "error" | "warning" | "info";
+  requires: UserActions[];
+};
+
+type BaseViewProps = {
+  label?: string;
+  tooltip?: string;
+  requiresAttention?: RequiresAttentionItem[];
+};
+
+type UiStyles = {
+  active?: string;
+  focus?: string;
+  hover?: string;
+  empty?: string;
+  needsAttention?: string;
+  error?: string;
+};
+
+type TextViewProps = BaseViewProps & {
+  wrap?: boolean;
+  truncate?: boolean;
+};
+type TextInputViewProps = BaseViewProps & {
+  placeholder: string;
+  min?: number;
+  max?: number;
+};
+type NumberViewProps = BaseViewProps & {
+  decimalPlaces?: number;
+};
+type ChevronViewProps = BaseViewProps & {
+  stepCount: number;
+  min?: number;
+  max?: number;
+};
+type NumberInputViewProps = BaseViewProps & {
+  placeholder: number,
+  min?: number;
+  max?: number;
+};
+type BooleanViewProps = BaseViewProps & {
+  truthyValue?: string;
+  falseyValue?: string;
+};
+type CheckboxViewProps = BaseViewProps & {};
+type DateViewProps = BaseViewProps & {
+  format?: {
+    delimiter?: "-" | "/" | " ";
+    year: "YYYY" | "YY" | null;
+    month: "MM" | "short" | "full" | null;
+    day: "DD" | "short" | "full" | null;
+  };
+};
+type DatePickerViewProps = BaseViewProps & {
+  min?: Date;
+  max?: Date;
+  calendar?: "week" | "month" | "year";
+};
+
+type PriorityViewProps = BaseViewProps & {};
+type PopupViewProps = BaseViewProps & {
+  content:
+    | { calendar: DatePickerViewProps }
+    | { priority: PriorityViewProps }
+    | { timepicker: TimePickerViewProps };
+};
+type TimeViewProps = BaseViewProps & {
+  format?: {
+    delimiter?: ":" | "." | " " | null;
+    hour?: "HH" | "hh";
+    minute?: "mm" | null;
+    type?: "12" | "24";
+    amPm?: "uppercase" | "lowercase";
+  };
+};
+
+type TimePickerViewProps = BaseViewProps & {
+  type?: "12" | "24";
+  stepCount?: number;
+  min?: number;
+  max?: number;
+};
+type DropdownViewProps = BaseViewProps & {
+  placeholder: string;
+  items: string[];
+  label: string;
+};
+type ButtonViewProps = BaseViewProps & {
+  labelIsValue: boolean;
+  label: string;
+};
+
+
+type ViewProps =
+  | TextViewProps
+  | TextInputViewProps
+  | NumberViewProps
+  | ChevronViewProps
+  | NumberInputViewProps
+  | BooleanViewProps
+  | CheckboxViewProps
+  | DateViewProps
+  | PopupViewProps
+  | TimeViewProps
+  | TimePickerViewProps
+  | DropdownViewProps
+  | ButtonViewProps
+  | BaseViewProps;
+
+type ReadOnlyViewProps =
+  | { text: TextViewProps; styles?: UiStyles }
+  | { number: NumberViewProps; styles?: UiStyles }
+  | { boolean: BooleanViewProps; styles?: UiStyles }
+  | { date: DateViewProps; styles?: UiStyles }
+  | { time: TimeViewProps; styles?: UiStyles }
+  | { hidden: BaseViewProps; styles?: UiStyles };
+
+type EditableViewProps = 
+| { chevron: ChevronViewProps; styles?: UiStyles }
+| { rowSelect: BaseViewProps; styles?: UiStyles }
+| { button: ButtonViewProps; styles?: UiStyles }
+| { checkbox: CheckboxViewProps; styles?: UiStyles }
+
+type EditingViewProps =
+  | { textInput: TextInputViewProps; styles?: UiStyles }
+  | { numberInput: NumberInputViewProps; styles?: UiStyles }
+  | { popup: PopupViewProps; styles?: UiStyles }
+  | { timePicker: TimePickerViewProps; styles?: UiStyles }
+  | { dropdown: DropdownViewProps; styles?: UiStyles }
+  | { checkbox: CheckboxViewProps; styles?: UiStyles }
+  
 
 type DataColumnDict = {
   [key: string]: {
-    sqlText: string;
-    sqlTableHeader: string;
-    googleSheetHeader: string | null;
-    toSqlConverter?: (value: string) => any;
-    toGoogleConverter?: (value: any) => string;
-    columnDef: DataColumnDefinition;
+    id: string;
+    //sqlText: string;
+    //sqlTableHeader: SqlTableHeader;
+    googleSheetHeader: GoogleSheetHeader | null;
+    //toSqlConverter?: (value: string) => any;
+    //toGoogleConverter?: (value: any) => string;
+    columnDef?: DataColumnDefinition;
   };
 };
 
 type DataColumnDefinition = {
   id?: string;
   headerFunction?: HeaderFunctions;
-  cellInfo?: CellInfo;
+  cell: CellView | null;
   enableSorting?: boolean;
   enableHiding?: boolean;
+  viewable?: boolean;
 };
 
 type HeaderFunctions = "checkbox" | "sort";
 
-type CellInfo = {
-  defaultView: ReadOnlyView;
-  viewOptions?: ViewOptions;
-  newItemValue? : any;
-  nullValue?: any;
-  onClickView?: EditableFields;
-  validations: Validations;
-  appearance?: {
-    justify?: "justify-start" | "justify-center" | "justify-end";
-    items?: "items-start" | "items-center" | "items-end";
-    truncate?: boolean;
-    wrap?: boolean;
-    bold?: boolean;
-    italic?: boolean;
-    underline?: boolean;
-    color?: string;
-    backgroundColor?: string;
-    border?: string;
-    fontSize?: number;
+type CellValueStatus = {
+  needsAttention: boolean;
+  hasError: boolean;
+  isEditable: boolean;
+  editing: boolean;
+  isNull: boolean;
+};
+
+type ValueSpecifics =
+  | { type: "text"; default: string }
+  | { type: "number"; default: number }
+  | { type: "date"; default: Date }
+  | { type: "time"; default: string }
+  | { type: "boolean"; default: boolean }
+  | { type: "checkbox"; default: boolean };
+
+type CellView = {
+  view: {
+    readOnly: ReadOnlyViewProps | false
+    editable: {
+      default: EditableViewProps;
+      editing: EditingViewProps;
+    } | false
+    
   };
-};
-
-type ReadOnlyView =
-  | "string"
-  | "number"
-  | "boolean"
-  | "date"
-  | "time"
-  | "checkbox";
-
-
-type ViewOptions = {
-  booleanOptions?: {
-    true: string;
-    false: string;
+  value: ValueSpecifics & {
+    nullable?: boolean;
+    required?: boolean;
   };
-  chevronOptions?: {
-    step: number;
-  };
-  buttonOptions?: {
-    label: string;
-  };
-};
-
-type EditableFields = {
-  inputField?: InputField;
-  dropdownField?: DropdownField;
-  datePickerField?: DatePickerField;
-  timePickerField?: TimePickerField;
-  priorityPopup?: PriorityPopup;
-};
-type DropdownField = {
-  label: string;
-  options: string[];
-  placeholder: string;
-};
-
-type InputField = {
-  label: string;
-  placeholder: string | number;
-  type: "text" | "number";
-};
-
-type DatePickerField = {
-  label: string;
-};
-
-type TimePickerField = {
-  label: string;
-};
-
-type PriorityPopup = {}
-
-type Validations = {
-  nullable?: boolean;
-  required?: boolean;
-  pattern?: string;
-  min?: number;
-  max?: number;
-  minDate?: Date;
-  maxDate?: Date;
-  minLength?: number;
-  maxLength?: number;
-  minTime?: TimeFormat;
-  maxTime?: TimeFormat;
 };
 
 type TabPermissions = "readOnly" | "edit" | "admin";
@@ -209,71 +397,72 @@ type Message = {
 
 type ProductData = {
   [key: string]: any;
-  Id: string;
-  Work_Center: WorkCenter;
-  Job_Number: string;
-  Customer: string;
-  Text: string;
-  Quantity: number;
-  Length: number;
-  Production_Quantity: number;
-  Requested_Ship_Date: DateFormat;
-  Requested_Ship_Time: TimeFormat;
-  Set_Up: number;
-  UPH: number;
-  Cut: CutColumn;
-  Extrusion: ExtrusionColumn;
-  Ground: GroundColumn;
-  Drawing: DrawingColumn;
-  Ends: EndsColumn;
-  Balance_Quantity: number;
-  Priority: number;
-  Scheduled_Start: Date; 
-  Scheduled_End: Date; 
+  id: string;
+  "Work Center": WorkCenter;
+  "Job Number": string;
+  "Customer": string;
+  "Text": string;
+  "Quantity": number;
+  "Length": number;
+  "Production Quantity": number;
+  "Requested Ship Date": Date;
+  "Requested Ship Time": string;
+  "Set Up": number;
+  "UPH": number;
+  "Cut": CutColumn;
+  "Extrusion": ExtrusionColumn;
+  "Ground": GroundColumn;
+  "Drawing": DrawingColumn;
+  "Ends": EndsColumn;
+  "Balance Quantity": number;
+  "Priority": number;
+  "Scheduled Start": Date;
+  "Scheduled End": Date;
 };
 
-type ProductionScheduleData = ProductData
+type ProductionScheduleData = ProductData;
 
-
-type WorkCenterData = ProductData 
+type WorkCenterData = ProductData;
 
 type LedgerData = {
   [key: string]: any;
-  Id: string;
-  Work_Center: WorkCenter;
-  Date: Date;
-  Weekday: string;
-  Start: TimeFormat;
-  End: TimeFormat;
+  id: string;
+  "Work Center": WorkCenter;
+  "Date": Date;
+  "Weekday": string;
+  "Start": string;
+  "End": string;
 };
 
 type WorkCenterScheduleData = {
   [key: string]: any;
-  Id: string;
-  Date_Weekday_Holiday: WorkCenter;
-  UNASSIGNED: TimeFormat;
-  SL_50: TimeFormat;
-  SL_30: TimeFormat;
-  Q2: TimeFormat;
-  R: TimeFormat;
-  A: TimeFormat;
-  X: TimeFormat;
-  SECT_1: TimeFormat;
-  N: TimeFormat;
-  H: TimeFormat;
-  Long_press: TimeFormat;
-  Fabrication: TimeFormat;
-  PVC: TimeFormat;
-  PVC_VG: TimeFormat;
-  Punch_press: TimeFormat;
-  Loose_BW: TimeFormat;
-  Ready: TimeFormat;
+  id: string;
+  "Date / Weekday / Holiday": string;
+  "UNASSIGNED": string;
+  "SL 50": string;
+  "SL 30": string;
+  "Q": string;
+  "Q2": string;
+  "R": string;
+  "A": string;
+  "X": string;
+  "SECT #1": string;
+  "N": string;
+  "H": string;
+  "Long press": string;
+  "Fabrication": string;
+  "PVC": string;
+  "PVC VG": string;
+  "Punch press": string;
+  "Loose BW": string;
+  "Ready for inspection": string;
 };
 
 type WorkCenter =
   | "UNASSIGNED"
   | "SL 50"
   | "SL 30"
+  | "Q"
   | "Q2"
   | "R"
   | "A"
@@ -289,7 +478,6 @@ type WorkCenter =
   | "Loose BW"
   | "Ready for inspection";
 
-
 type CutColumn =
   | "_"
   | "Cut"
@@ -299,9 +487,7 @@ type CutColumn =
   | "Ends"
   | "None";
 
-
 type ExtrusionColumn = "_" | "Ext 1" | "Ext 2" | "Ext 3" | "Ext 4" | "Ext 5";
-
 
 type GroundColumn =
   | "_"
@@ -311,21 +497,18 @@ type GroundColumn =
   | "Grind 4"
   | "Grind 5";
 
-
 type DrawingColumn = "_" | "Draw 1" | "Draw 2" | "Draw 3" | "Draw 4" | "Draw 5";
-
 
 type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
 
-
-// type TimeFormat = {
+// type string = {
 //   hour: number;
 //   minute: number;
 // };
 
 // type DaySchedule = {
-//   start: TimeFormat;
-//   end: TimeFormat;
+//   start: string;
+//   end: string;
 // };
 
 // type SheetData = {
@@ -373,8 +556,8 @@ type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
 //   [key: string]: any;
 //   workCenter: WorkCenter;
 //   date: Date;
-//   start: TimeFormat;
-//   end: TimeFormat;
+//   start: string;
+//   end: string;
 //   predicted: boolean;
 //   actual: boolean;
 // };
@@ -390,7 +573,7 @@ type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
 //   productQuantity: number;
 //   balanceQuantity: number;
 //   requestedShipDate: Date;
-//   requestedShipTime: TimeFormat;
+//   requestedShipTime: string;
 //   setUp: number;
 //   uph: number;
 //   timeToCompleteTotal: number;
@@ -431,9 +614,9 @@ type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
 //   workCenterReferenceSheetName: string;
 //   scheduleSheetName: string;
 //   calendarSheetName: string;
-//   dateFormat: string;
-//   timeFormat: string;
-//   datetimeFormat: string;
+//   Date: string;
+//   string: string;
+//   datestring: string;
 //   sundayColumn: number;
 //   mondayColumn: number;
 //   tuesdayColumn: number;
@@ -483,8 +666,42 @@ type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
 //   className: string;
 // };
 
-// type DateTimeFormatOptions = {
+// type DatestringOptions = {
 //   type: "date" | "time";
 //   name: string;
 //   format: string;
+// };
+
+// type UiType =
+//   | "text"
+//   | "textInput"
+//   | "number"
+//   | "chevron"
+//   | "numberInput"
+//   | "boolean"
+//   | "checkbox"
+//   | "date"
+//   | "popup"
+//   | "time"
+//   | "timePicker"
+//   | "dropdown"
+//   | "button"
+//   | "hidden";
+
+// type CellStyle = {
+//   readOnly: string;
+//   editable: string;
+//   editing: string;
+//   null: string;
+//   needsAttention: string;
+//   error: string;
+// };
+
+// type OptionalCellStyles = {
+//   readOnly?: string;
+//   editable?: string;
+//   editing?: string;
+//   null?: string;
+//   needsAttention?: string;
+//   error?: string;
 // };

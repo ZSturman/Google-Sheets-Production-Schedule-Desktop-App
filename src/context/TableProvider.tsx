@@ -1,155 +1,149 @@
+// TableProvider.tsx
 import {
   createContext,
   useContext,
   ReactNode,
   useEffect,
-  useState,
-  useRef,
   useMemo,
+  useState,
+  useCallback,
 } from "react";
 import {
-  Column,
   ColumnDef,
   ColumnFiltersState,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
-  Row,
-  RowSelectionState,
   SortingState,
   useReactTable,
   VisibilityState,
+  RowSelectionState,
 } from "@tanstack/react-table";
 import { Table as ReactTable } from "@tanstack/react-table";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 import { Button } from "../components/ui/button";
-import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../components/ui/popover";
-import { Calendar } from "../components/ui/calendar";
-import { Input } from "../components/ui/input";
 import { useData } from "./DataProvider";
-import { defaultNewProductsTableRow } from "../data/defaults";
+import HeaderAsCheckbox from "../components/data-table/HeaderAsCheckbox";
+import ReadOnlyComponents from "../components/data-table/ReadOnlyComponents";
+import { useTab } from "./TabProvider";
+import CellAsCheckbox from "../components/data-table/CellAsCheckbox";
+import CellAsChevronAndNumberInput from "../components/data-table/CellAsChevronAndNumberInput";
+import CellAsNumberInput from "../components/data-table/CellAsNumberInput";
+import CellAsDropdown from "../components/data-table/CellAsDropdown";
+import CellAsTextInput from "../components/data-table/CellAsTextInput";
+import CellAsPopupAndTimePicker from "../components/data-table/CellAsPopupAndTimePicker";
+import CellAsPopupAndCalendar from "../components/data-table/CellAsPopupAndCalendar";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+  AddOption,
+  DeleteOption,
+  FilterInput,
+  ViewOptions,
+} from "../components/data-table/TableOptions";
+import { v4 as uuidv4 } from "uuid";
 
 type TableContextType = {
   table: ReactTable<DataRowT> | null;
   renderTableOptions: () => ReactNode;
-  loading: LoadingState;
+  selectedData: DataRowT[];
 };
 
-const defaultTableContext: TableContextType = {
-  table: null,
-  renderTableOptions: () => null,
-  loading: "loading",
-};
-
-const TableContext = createContext<TableContextType>(defaultTableContext);
+const TableContext = createContext<TableContextType | undefined>(undefined);
 
 type TableProviderProps = {
   children: ReactNode;
-  selectedTab: TabOption;
-  productsData: ProductData[]
-  workCenterScheduleData: WorkCenterScheduleData[]
 };
 
-export const TableProvider = ({
-  children,
-  selectedTab,
-  productsData,
-  workCenterScheduleData
-}: TableProviderProps) => {
+export const TableProvider = ({ children }: TableProviderProps) => {
   const {
-    
-    addLocalSheetUpdate,
-    addMessage,
+    state,
+    updatedAt,
+    loading,
+    handleDataChange,
+    handleDeleteRows,
+    processAllWorkCenters,
+    processSpecificWorkCenter,
   } = useData();
+  const { selectedTab } = useTab();
 
-  const [localProductsData, setLocalProductsData] = useState<
-    ProductData[]
-  >(productsData);
-  const [localWorkCenterScheduleData, setLocalWorkCenterScheduleData] =
-    useState<WorkCenterScheduleData[] >(workCenterScheduleData);
-  const [localProductionScheduleData, setLocalProductionScheduleData] =
-    useState<ProductionScheduleData[] | LoadingState>("loading");
-  const [localLedgerData, setLocalLedgerData] = useState<
-    LedgerData[] | LoadingState
-  >("loading");
-  const [localWorkCenterData, setLocalWorkCenterData] = useState<
-    WorkCenterData[] | LoadingState
-  >("loading");
+  const [selectedData, setSelectedData] = useState<DataRowT[]>([]);
 
-  const [loading, setLoading] = useState<LoadingState>("loading");
+  useEffect(() => {
+    if (!loading) {
+      if (selectedTab) {
+        let data: DataRowT[] = [];
+        if (selectedTab.id === "work_center_schedules") {
+          data = state.workCenterSchedules;
+        } else if (selectedTab.id === "ledger") {
+          data = state.ledger;
+        } else {
+          if (selectedTab.isWorkCenter) {
+            data = state.products.filter(
+              (row) => row["work_center"] === selectedTab.name
+            );
+          } else {
+            console.log("Selected Tab is not Work Center", selectedTab);
+            data = state.products;
+          }
+        }
+        setSelectedData(data);
+      }
+    }
+  }, [state, selectedTab, updatedAt, loading]);
+
+  const updateLocalData = useCallback(
+    (updatedRow: DataRowT) => {
+      console.log("Updating local data with: ", updatedRow);
+      setSelectedData((prevData) =>
+        prevData.map((row) =>
+          row.id === updatedRow.id ? { ...row, ...updatedRow } : row
+        )
+      );
+      handleDataChange(selectedTab, "update", updatedRow);
+    },
+    [handleDataChange, selectedTab]
+  );
+
+  const addToLocalData = useCallback(
+    async (newRow: DataRowT) => {
+      // Add a temporary ID if one doesn't exist
+      if (!newRow.id) {
+        newRow.id = uuidv4();
+      }
+
+      // Add the new row optimistically
+      setSelectedData((prevData) => [newRow, ...prevData]);
+
+      try {
+        // Simulate an async operation (e.g., API call)
+        await handleDataChange(selectedTab, "add", newRow);
+
+        console.log("Row added successfully!");
+      } catch (error) {
+        console.error("Failed to add new row:", error);
+
+        // Rollback: Remove the optimistically added row
+        setSelectedData((prevData) =>
+          prevData.filter((row) => row.id !== newRow.id)
+        );
+      }
+    },
+    [handleDataChange, selectedTab]
+  );
+
+  const deleteFromLocalData = useCallback(
+    (deletedRows: DataRowT[]) => {
+      const deletedIds = new Set(deletedRows.map((row) => row.id));
+      setSelectedData((prevData) =>
+        prevData.filter((row) => !deletedIds.has(row.id))
+      );
+      handleDeleteRows(selectedTab, deletedRows);
+    },
+    [handleDeleteRows, selectedTab]
+  );
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-
-  const [editingCell, setEditingCellInternal] = useState<EditingCell | null>(
-    null
-  );
-
-  useEffect(() => {
-    if (selectedTab.id === "work_center_schedules") {
-      if (checkForLoadingOrErrorOrZeroLength(productsData)) return;
-      setLocalWorkCenterScheduleData(workCenterScheduleData);
-    }
-
-    if (selectedTab.id === "products") {
-      if (checkForLoadingOrErrorOrZeroLength(productsData)) return;
-      setLocalProductsData(productsData);
-    }
-
-    if (selectedTab.isWorkCenter) {
-      if (checkForLoadingOrErrorOrZeroLength(productsData)) return;
-      const derivedWorkCenterData = getWorkCenterData()
-    }
-  }, [selectedTab, workCenterScheduleData, productsData]);
-
-  const getWorkCenterData = (): WorkCenterData[] => {
-    console.log("Get work center data");
-    return productsData as WorkCenterData[]
-  }
-
-  const checkForLoadingOrErrorOrZeroLength = (
-    tableData: DataTableT | LoadingState
-  ) => {
-    if (tableData === "loading" || tableData === "error") {
-      addMessage({
-        type: "error",
-        message: "Error loading data",
-        timestamp: new Date(),
-      });
-      return true;
-    }
-
-    if (tableData.length === 0) {
-      addMessage({
-        type: "info",
-        message: "No data found",
-        timestamp: new Date(),
-      });
-      return true;
-    }
-
-    return false;
-  };
 
   useEffect(() => {
     setSorting([]);
@@ -158,576 +152,368 @@ export const TableProvider = ({
     setRowSelection({});
   }, [selectedTab]);
 
-  const cancelEditing = () => {
-    setEditingCell(null);
-  };
-
-  const setEditingCell = (newCell: EditingCell | null) => {
-    if (editingCell) {
-      // Check if the new cell is different from the currently editing cell
-      if (
-        !newCell ||
-        newCell.row.id !== editingCell.row.id ||
-        newCell.columnId !== editingCell.columnId
-      ) {
-        // Save the changes to the current editing cell
-        const updatedData = localProductsData.map((row) => {
-          if (row === editingCell.row.original) {
-            return {
-              ...row,
-              [editingCell.columnId]: editingCell.newValue,
-            };
-          }
-          return row;
-        }) 
-
-        setLocalProductsData(updatedData);
-
-        // Save the changes to the database
-        handleUpdateRecord(editingCell.row.original.Id, {
-          [editingCell.columnId]: editingCell.newValue,
-        });
-
-        // Log the previous value and cell
-        console.log("Previous editing cell value saved:", {
-          columnId: editingCell.columnId,
-          initialValue: editingCell.initialValue,
-          newValue: editingCell.newValue,
-          row: editingCell.row,
-        });
-      }
-    }
-
-    // Set the new cell as the editing cell
-    if (newCell) {
-      console.log("New editing cell set:", {
-        columnId: newCell.columnId,
-        initialValue: newCell.initialValue,
-        newValue: newCell.newValue,
-        row: newCell.row,
-      });
-    }
-
-    setEditingCellInternal(newCell);
-  };
-  const handleUpdateRecord = async (
-    id: string,
-    updatedRecord: Record<string, any>
-  ) => {
-    // Optimistically update local data
-    const updatedData = localProductsData.map((row) => {
-      if (row.Id === id) {
-        return {
-          ...row,
-          ...updatedRecord,
-        };
-      }
-      return row;
-    }) 
-
-    const updatedRow = updatedData.find((row) => row.Id === id);
-    if (!updatedRow) {
-      console.error("Updated record not found.");
-      return;
-    }
-
-    // Push changes to the backend and Google Sheets
-    addLocalSheetUpdate(selectedTab, "update", updatedRow as DataRowT);
-
-    addMessage({
-      type: "success",
-      message: "Record updated successfully",
-      timestamp: new Date(),
-    });
-  };
-
-  useEffect(() => {}, [editingCell?.newValue]);
-
-  const handleAddNewRow = () => {
-    console.log("Add new row", defaultNewProductsTableRow);
-  };
-
-  const addRowButton = () => {
-    return <Button onClick={handleAddNewRow}>Add Row</Button>;
-  };
-
-  const handleDeleteRows = () => {
-    console.log("Delete selected rows");
-  };
-
-  const deleteRowsButton = () => {
-    return <Button onClick={handleDeleteRows}>Delete Rows</Button>;
-  };
-
-  const handleExportData = () => {
-    console.log("Export data");
-  };
-
-  const exportDataButton = () => {
-    return <Button onClick={handleExportData}>Export Data</Button>;
-  };
-
-  const generateColumnDefs = (): ColumnDef<DataRowT>[] => {
+  // Memoize column definitions
+  const generateColumnDefs = useCallback((): ColumnDef<DataRowT>[] => {
     if (!selectedTab.columnDict) {
-      addMessage({
-        type: "error",
-        message: "No column dictionary found for the selected tab",
-        timestamp: new Date(),
-      });
+      console.error("No column dictionary found for the selected tab");
       return [];
     }
-
     return Object.values(selectedTab.columnDict).map(
-      ({ googleSheetHeader, sqlTableHeader, columnDef }) => {
-        const { headerFunction, id, cellInfo, enableHiding, enableSorting } =
-          columnDef;
+      ({ googleSheetHeader, id, columnDef }) => {
+        const { headerFunction, cell, enableHiding, enableSorting } =
+          columnDef || {};
+        const columnId = id || "unknown_column";
 
-        const dataColumn: ColumnDef<DataRowT> = {
-          accessorKey: sqlTableHeader,
-          id,
+        const updateCellValue = (row: any, column: any, newValue: string) => {
+          const updatedRow = { ...row.original, [column.id]: newValue };
+          updateLocalData(updatedRow);
+          // setTimeout(
+          //   () => handleDataChange(selectedTab, "update", updatedRow),
+          //   500
+          // );
+        };
+
+        return {
+          accessorKey: id,
+          id: columnId,
           header: (context) => {
-            // Lazy initialization of table-based headers
-            const { table, column } = context;
             switch (headerFunction) {
               case "checkbox":
-                return headerAsCheckbox({ table });
+                return HeaderAsCheckbox({ table: context.table });
               case "sort":
-                return sortColumns({ column });
+                const handleSortClick = () => {
+                  const currentSort = context.column.getIsSorted(); // Get current sort state
+                  let nextSort;
+
+                  if (!currentSort) {
+                    console.log("Not sorted");
+                    nextSort = "asc"; // If not sorted, sort ascending
+                  } else if (currentSort === "asc") {
+                    nextSort = "desc"; // If ascending, sort descending
+                  } else if (currentSort === "desc") {
+                    nextSort = false; // Clear sorting
+                  }
+                  context.column.toggleSorting(nextSort as any);
+                };
+
+                return (
+                  <Button
+                    className="bg-transparent text-zinc-700 shadow-none"
+                    variant="secondary"
+                    onClick={handleSortClick}
+                  >
+                    {googleSheetHeader}
+                    {context.column.getIsSorted() === "asc" && <span> ▲</span>}
+                    {context.column.getIsSorted() === "desc" && <span> ▼</span>}
+                  </Button>
+                );
               default:
                 return <span>{googleSheetHeader}</span>;
             }
           },
           cell: ({ row, column }) => {
-            let value = row.original[sqlTableHeader];
+            if (!cell || !cell.view) return null;
 
-            // Check if the current cell is being edited
-            const isEditing =
-              editingCell &&
-              editingCell.row === row &&
-              editingCell.columnId === column.id;
-
-            const handleValueChange = (newValue: any) => {
-              if (!editingCell) {
-                console.error("No editing cell set.");
-                return;
-              }
-
-
-
-              // Update the current editing cell's newValue
-              setEditingCell({ ...editingCell, newValue });
-            };
-
-            const handleSetCellToEditing = () => {
-              console.log("Set cell to editing");
-              setEditingCell({
-                row,
-                columnId: column.id,
-                initialValue: row.original[column.id],
-                newValue: row.original[column.id],
-              });
-            };
-
-            if (!cellInfo) {
+            if (headerFunction === "checkbox") {
               return (
-                <span className="text-gray-500">
-                  {value === null ? "N/A" : value}
-                </span>
+                <input
+                  type="checkbox"
+                  checked={row.getIsSelected()}
+                  onChange={() => row.toggleSelected()}
+                />
               );
             }
 
-            if (value === null && cellInfo.nullValue) {
-              value = cellInfo.nullValue;
-            } else if (cellInfo.defaultView === "number") {
-              value = Number(value).toLocaleString();
-            } else if (cellInfo.defaultView === "boolean") {
-              if (cellInfo.viewOptions?.booleanOptions) {
-                value = value
-                  ? cellInfo.viewOptions.booleanOptions.true
-                  : cellInfo.viewOptions.booleanOptions.false;
-              } else {
-                value = value ? "True" : "False";
-              }
-            } else if (cellInfo.defaultView === "date") {
-              value = new Date(value).toLocaleDateString();
-            } else if (cellInfo.defaultView === "time") {
-              value = new Date(value).toLocaleTimeString();
-            }
+            if (cell.view.editable) {
+              const handleCellUpdate = (newValue: string) => {
+                if (newValue !== row.original[column.id]) {
+                  updateCellValue(row, column, newValue);
+                }
+              };
 
-            if (cellInfo.defaultView === "checkbox") {
-              return renderCellAsCheckbox({ row });
-            }
-
-            const renderWithAppearance = (value: string) => {
-              if (!cellInfo.appearance) {
-                return <span>{value}</span>;
-              }
-
-              const {
-                justify = "justify-center",
-                items = "items-center",
-                truncate = "",
-                wrap = "",
-                bold = "",
-                italic = "",
-                underline = "",
-                color = "text-black",
-                backgroundColor = "bg-red-600",
-                border = "",
-                fontSize = "",
-              } = cellInfo.appearance;
-
-              return (
-                <Button
-                  className={`flex flex-row w-full h-full ${justify} ${items} ${backgroundColor} ${fontSize} ${color} ${
-                    bold ? "font-bold" : ""
-                  } ${italic ? "italic" : ""} ${underline ? "underline" : ""}`}
-                  onClick={handleSetCellToEditing}
-                >
-                  {value}
-                </Button>
-              );
-            };
-
-            const renderDefaultView = (value: string) => {
-              if (cellInfo.viewOptions?.chevronOptions) {
-                const { step } = cellInfo.viewOptions.chevronOptions;
-
-                return renderCellChevrons(
-                  value,
-                  handleValueChange,
-                  renderWithAppearance,
-                  cellInfo.validations,
-                  step
+              if (
+                "checkbox" in cell.view.editable.default ||
+                "checkbox" in cell.view.editable.editing
+              ) {
+                return (
+                  <CellAsCheckbox
+                    value={row.original[column.id]}
+                    onSave={handleCellUpdate}
+                  />
                 );
               }
 
-              return renderWithAppearance(value);
-            };
-
-            if (isEditing) {
-              if (cellInfo.onClickView) {
-                if (cellInfo.onClickView.datePickerField) {
-                  return renderDatePickerField(
-                    handleValueChange,
-                    renderWithAppearance,
-                    cellInfo.validations
+              if ("numberInput" in cell.view.editable.editing) {
+                if ("chevron" in cell.view.editable.default) {
+                  return (
+                    <CellAsChevronAndNumberInput
+                      value={row.original[column.id]}
+                      onSave={(newValue) => {
+                        updateCellValue(row, column, newValue);
+                      }}
+                    />
                   );
-                } else if (cellInfo.onClickView.inputField) {
-                  return renderInputField(
-                    handleValueChange,
-                    cellInfo.onClickView.inputField.placeholder,
-                    cellInfo.onClickView.inputField.type
-                  );
-                } else if (cellInfo.onClickView.dropdownField) {
-                  return renderDropDownField(
-                    cellInfo.onClickView.dropdownField.options,
-                    handleValueChange,
-                    cellInfo.onClickView.dropdownField.placeholder,
-                    cellInfo.onClickView.dropdownField.label
-                  );
-                } else if (cellInfo.onClickView.timePickerField) {
-                  return renderTimePickerField();
                 } else {
-                  return renderDefaultView(value);
+                  return (
+                    <CellAsNumberInput
+                      value={row.original[column.id]}
+                      onSave={(newValue) => {
+                        updateCellValue(row, column, newValue);
+                      }}
+                    />
+                  );
                 }
-              } else {
-                return renderDefaultView(value);
               }
-            } else {
-              return renderDefaultView(value);
+
+              if ("dropdown" in cell.view.editable.editing) {
+                let buttonProps: ButtonViewProps;
+                if ("button" in cell.view.editable.default) {
+                  buttonProps = cell.view.editable.default.button;
+                } else {
+                  buttonProps = {
+                    labelIsValue: true,
+                    label: "Select",
+                  };
+                }
+
+                return (
+                  <CellAsDropdown
+                    value={row.original[column.id]}
+                    onSave={(newValue) => {
+                      updateCellValue(row, column, newValue);
+                    }}
+                    triggerProps={buttonProps}
+                    dropdownProps={cell.view.editable.editing.dropdown}
+                  />
+                );
+              }
+
+              if ("popup" in cell.view.editable.editing) {
+                let buttonProps: ButtonViewProps;
+                if ("button" in cell.view.editable.default) {
+                  buttonProps = cell.view.editable.default.button;
+                } else {
+                  buttonProps = {
+                    labelIsValue: true,
+                    label: "Select",
+                  };
+                }
+
+                if ("timepicker" in cell.view.editable.editing.popup.content) {
+                  return (
+                    <CellAsPopupAndTimePicker
+                      value={row.original[column.id]}
+                      onSave={(newValue) => {
+                        updateCellValue(row, column, newValue);
+                      }}
+                      triggerProps={buttonProps}
+                      popupProps={cell.view.editable.editing.popup}
+                      timePickerProps={
+                        cell.view.editable.editing.popup.content.timepicker
+                      }
+                    />
+                  );
+                }
+
+                if ("calendar" in cell.view.editable.editing.popup.content) {
+                  return (
+                    <CellAsPopupAndCalendar
+                      value={row.original[column.id]}
+                      onSave={(newValue) => {
+                        updateCellValue(row, column, newValue);
+                      }}
+                      triggerProps={buttonProps}
+                      popupProps={cell.view.editable.editing.popup}
+                      calendarProps={
+                        cell.view.editable.editing.popup.content.calendar
+                      }
+                    />
+                  );
+                }
+              }
+
+              return (
+                <CellAsTextInput
+                  value={row.original[column.id]}
+                  onSave={(newValue) => {
+                    updateCellValue(row, column, newValue);
+                  }}
+                />
+              );
             }
+            if (cell.view.readOnly) {
+              return (
+                <ReadOnlyComponents
+                  readOnlyProps={cell.view.readOnly}
+                  value={row.original[column.id]}
+                />
+              );
+            }
+            return <div>No view configuration found for this cell.</div>;
           },
           enableHiding: enableHiding ?? true,
           enableSorting: enableSorting ?? true,
         };
-
-        return dataColumn;
       }
     );
-  };
+  }, [selectedTab.columnDict, handleDataChange, updateLocalData]);
 
-  const headerAsCheckbox = ({ table }: { table: ReactTable<DataRowT> }) => (
-    <input
-      type="checkbox"
-      className="bg-transparent size-8 checked:bg-black checked:text-white"
-      checked={
-        table.getIsAllPageRowsSelected() ||
-        (table.getIsSomePageRowsSelected() ? true : false)
+  const memoizedData = useMemo(() => selectedData, [selectedData]);
+  const memoizedColumnDefs = useMemo(
+    () => generateColumnDefs(),
+    [generateColumnDefs]
+  );
+
+  const table = useReactTable({
+    data: memoizedData,
+    columns: memoizedColumnDefs,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: { sorting, columnFilters, columnVisibility, rowSelection },
+    onSortingChange: (newSorting) => {
+      console.log("onSortingChange: ", newSorting);
+      setSorting(newSorting);
+    },
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+  });
+
+  const renderLedgerTableOptions = () => {
+    if (!table) return null;
+
+    // Get selected rows
+    const selectedRows = table.getSelectedRowModel().rows;
+
+    const handleConfirmDelete = (confirmed: boolean) => {
+      if (confirmed) {
+        deleteFromLocalData(selectedRows.map((row) => row.original));
+        table.setRowSelection({});
+      } else {
+        console.log("Delete operation cancelled.");
       }
-      onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
-      aria-label="SelectAll"
-    />
-  );
-
-  const sortColumns = ({ column }: { column: Column<DataRowT, unknown> }) => (
-    <Button
-      className="bg-transparent text-zinc-700 shadow-none"
-      variant="secondary"
-      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    >
-      {column.id} {/* You can replace this with a custom label */}
-    </Button>
-  );
-
-  const renderCellAsCheckbox = ({ row }: { row: Row<DataRowT> }) => (
-    <input
-      type="checkbox"
-      className="bg-transparent size-8 checked:bg-black checked:text-white peer"
-      checked={row.getIsSelected()}
-      onChange={(e) => row.toggleSelected(e.target.checked)}
-      aria-label="Select row"
-    />
-  );
-
-  const renderCellChevrons = (
-    value: string,
-    handleValueChange: (value: number) => void,
-    renderWithAppearance: (value: string) => ReactNode,
-    validations: Validations,
-    step: number
-  ) => {
-    const [localValue, setLocalValue] = useState<number>(parseInt(value));
-
-    const min = validations.min ? validations.min : Number.MIN_SAFE_INTEGER;
-    const max = validations.max ? validations.max : Number.MAX_SAFE_INTEGER;
-
-    const increment = () => {
-      const newValue = Math.min(localValue + step, max);
-      setLocalValue(newValue);
-      handleValueChange(newValue);
-    };
-
-    const decrement = () => {
-      const newValue = Math.max(localValue - step, min);
-      setLocalValue(newValue);
-      handleValueChange(newValue);
     };
 
     return (
-      <div className="flex flex-col items-center justify-center">
-        {/* Chevron up */}
-        <Button
-          onClick={increment}
-          variant="ghost"
-          size="sm"
-          className="shadow-none bg-transparent text-black flex items-end justify-center p-0 px-1"
-        >
-          <BsChevronCompactUp />
-        </Button>
+      <div className="flex flex-col px-2">
+        <div className="text-sm text-muted-foreground lg:col-span-2">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="flex flex-row gap-3">
+          <AddOption
+            tabName={selectedTab.name}
+            onSubmit={(newRow) => addToLocalData(newRow)}
+          />
 
-        {renderWithAppearance(localValue.toString())}
-        {/* Chevron down */}
-        <Button
-          onClick={decrement}
-          variant="ghost"
-          size="sm"
-          className="shadow-none bg-transparent text-black flex items-start justify-center p-0 px-1"
-        >
-          <BsChevronCompactDown />
+          <DeleteOption
+            onConfirm={handleConfirmDelete}
+            disabled={selectedRows.length === 0}
+            numberOfRows={selectedRows.length}
+          />
+
+          <ViewOptions columns={table.getAllColumns()} />
+        </div>
+      </div>
+    );
+  };
+
+  const renderProductionScheduleTableOptions = () => {
+    if (!table) return null;
+
+    return (
+      <div>
+        <Button onClick={processAllWorkCenters}>
+          Process All Work Centers
         </Button>
       </div>
     );
   };
 
-  const renderDatePickerField = (
-    handleValueChange: (value: Date) => void,
-    renderWithAppearance: (value: string) => ReactNode,
-    validations: Validations
-  ) => {
-    if (!editingCell) return;
-    const [localValue, setLocalValue] = useState<Date | undefined>(
-      editingCell.initialValue ? new Date(editingCell.initialValue) : undefined
-    );
+  const renderProductsTableOptions = () => {
+    if (!table) return null;
 
-    const minDate = validations.minDate || new Date(); // Default to today
-    const maxDate = validations.maxDate || new Date(9999, 11, 31); // Default far future
+    // Get selected rows
+    const selectedRows = table.getSelectedRowModel().rows;
 
-    const handleChangeData = (date: Date) => {
-      if (date < minDate || date > maxDate) return; // Ignore invalid dates
-      setLocalValue(date);
-      handleValueChange(date);
-    };
-    return (
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="text-black">
-            {renderWithAppearance(
-              localValue ? localValue.toLocaleDateString() : "Select Date"
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-80">
-          <div className="flex flex-col space-y-2">
-            <Calendar
-              mode="single"
-              selected={localValue}
-              onSelect={(date) => date && handleChangeData(date)}
-              fromDate={minDate} // Minimum date
-              toDate={maxDate} // Maximum date
-              className="rounded-md border shadow"
-            />
-          </div>
-        </PopoverContent>
-      </Popover>
-    );
-  };
+    const customerFilterValue = table
+      .getColumn("customer")
+      ?.getFilterValue() as string;
+    const textFilterValue = table.getColumn("text")?.getFilterValue() as string;
 
-  const renderInputField = (
-    handleValueChange: (value: string) => void,
-    placeholder: string | number,
-    type: "text" | "number"
-  ) => {
-    const spanRef = useRef<HTMLSpanElement>(null);
-    const [inputWidth, setInputWidth] = useState("auto");
-
-    if (!editingCell) return null;
-
-    useEffect(() => {
-      if (spanRef.current) {
-        // Measure the content width dynamically
-        setInputWidth(`${spanRef.current.scrollWidth}px`);
+    const handleConfirmDelete = (confirmed: boolean) => {
+      if (confirmed) {
+        deleteFromLocalData(selectedRows.map((row) => row.original));
+        table.setRowSelection({});
+      } else {
+        console.log("Delete operation cancelled.");
       }
-    }, [editingCell.initialValue, placeholder]);
-
-    const handleSetLocalValue = (value: string) => {
-      handleValueChange(value);
     };
 
     return (
-      <div className="relative w-full">
-        {/* Hidden span for measuring width */}
-        <span
-          ref={spanRef}
-          className="absolute invisible whitespace-pre px-2"
-          style={{ font: "inherit", visibility: "hidden" }}
-        >
-          {editingCell.initialValue || placeholder}
-        </span>
+      <div className="flex flex-col px-2">
+        <div className="text-sm text-muted-foreground lg:col-span-2">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="flex flex-row gap-3">
+          <AddOption
+            tabName={selectedTab.name}
+            onSubmit={(newRow) => addToLocalData(newRow)}
+          />
 
-        <Input
-          type={type}
-          value={editingCell.newValue}
-          placeholder={placeholder.toString()}
-          onChange={(e) => handleSetLocalValue(e.target.value)}
-          onBlur={() => setEditingCell(null)}
-          autoFocus
-          className="text-center bg-background tabular-nums focus:outline-none text-black text-wrap px-0 py-2 "
-          style={{
-            width: inputWidth, // Set width dynamically
-            minWidth: "4ch", // Ensure a reasonable minimum width
-            maxWidth: "100%", // Prevent overflow in table cell
-          }}
-        />
-      </div>
-    );
-  };
+          <DeleteOption
+            onConfirm={handleConfirmDelete}
+            disabled={selectedRows.length === 0}
+            numberOfRows={selectedRows.length}
+          />
 
-  const renderDropDownField = (
-    items: string[],
-    handleValueChange: (value: string) => void,
-    placeholder: string,
-    label: string
-  ) => {
-    const handleSetEditingToNull = () => {
-      setEditingCell(null);
-    };
-    return (
-      <div>
-        <Select
-          onValueChange={handleValueChange}
-          defaultOpen
-          onOpenChange={handleSetEditingToNull}
-        >
-          <SelectTrigger className=" text-black">
-            <SelectValue className="text-black" placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel className="text-black">{label}</SelectLabel>
-              {items.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  };
+          <FilterInput
+            placeholder="Filter customer name..."
+            value={customerFilterValue ?? ""}
+            onChange={(value) =>
+              table.getColumn("customer")?.setFilterValue(value)
+            }
+          />
 
-  const renderTimePickerField = () => {
-    return (
-      <div>
-        <Input type="time" />
+          <FilterInput
+            placeholder="Filter text..."
+            value={textFilterValue ?? ""}
+            onChange={(value) => table.getColumn("text")?.setFilterValue(value)}
+          />
+
+          <ViewOptions columns={table.getAllColumns()} />
+        </div>
       </div>
     );
   };
 
   const renderTableOptions = () => {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="ml-auto text-black">
-            View
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {table
-            .getAllColumns()
-            .filter((column) => column.getCanHide())
-            .map((column) => {
-              return (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value: boolean) =>
-                    column.toggleVisibility(!!value)
-                  }
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              );
-            })}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
+    switch (selectedTab.id) {
+      case "ledger":
+        return renderLedgerTableOptions();
+      case "products":
+        return renderProductsTableOptions();
+      case "production_schedule":
+        return renderProductionScheduleTableOptions();
+
+      default:
+        return null;
+    }
   };
 
-  const columnDefs = generateColumnDefs();
-
-  const table = useReactTable({
-    data: localProductsData,
-    columns: columnDefs,
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  });
-
   return (
-    <TableContext.Provider
-      value={{
-        table,
-        renderTableOptions,
-        loading,
-      
-      }}
-    >
+    <TableContext.Provider value={{ table, renderTableOptions, selectedData }}>
       {children}
     </TableContext.Provider>
   );
 };
 
-export const usetable = () => useContext(TableContext);
+export const useTable = () => {
+  const context = useContext(TableContext);
+  if (!context) {
+    throw new Error("useTable must be used within a TableProvider");
+  }
+  return context;
+};

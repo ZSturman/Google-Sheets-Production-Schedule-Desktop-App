@@ -10,12 +10,13 @@ export const workCentersList = [
   "N",
   "H",
   "Long press",
-  "FABRICATION",
+  "Fabrication",
   "PVC",
   "PVC VG",
   "Punch press",
   "Loose BW",
   "Ready for inspection",
+  "UNASSIGNED",
 ]  
 
 export const workCenters = [
@@ -30,12 +31,13 @@ export const workCenters = [
   "N",
   "H",
   "Long press",
-  "FABRICATION",
+  "Fabrication",
   "PVC",
   "PVC VG",
   "Punch press",
   "Loose BW",
   "Ready for inspection",
+  "UNASSIGNED",
 ]  as const;
 
 // Define a type-safe union type of all work center names
@@ -54,12 +56,13 @@ export const wsqlTableWorkCenterMapping: Record<WorkCenter, string> = {
   N: "N",
   H: "H",
   "Long press": "Long_Press",
-  FABRICATION: "Fabrication",
+  Fabrication: "Fabrication",
   PVC: "PVC",
   "PVC VG": "PVC_VG",
   "Punch press": "Punch_Press",
   "Loose BW": "Loose_BW",
   "Ready for inspection": "Ready_for_inspection",
+  "UNASSIGNED": "UNASSIGNED",
 };
 
 type WorkCenterId = 
@@ -79,7 +82,8 @@ type WorkCenterId =
   | 'pvc_vg'
   | 'punch_press'
   | 'loose_bw'
-  | 'ready';
+  | 'ready_for_inspection'
+  | 'unassigned';
 
 export const workCenterIdMapping: Record<WorkCenterId, typeof workCentersList[number]> = {
   sl_50: "SL 50",
@@ -93,12 +97,13 @@ export const workCenterIdMapping: Record<WorkCenterId, typeof workCentersList[nu
   n: "N",
   h: "H",
   long_press: "Long press",
-  fabrication: "FABRICATION",
+  fabrication: "Fabrication",
   pvc_processing: "PVC",
   pvc_vg: "PVC VG",
   punch_press: "Punch press",
   loose_bw: "Loose BW",
-  ready: "Ready for inspection",
+  ready_for_inspection: "Ready for inspection",
+  unassigned: "UNASSIGNED",
 };
 
 

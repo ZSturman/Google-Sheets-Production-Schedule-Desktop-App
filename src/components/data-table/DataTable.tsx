@@ -7,10 +7,10 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import { usetable } from "../../context/TableProvider";
+import { useTable } from "../../context/TableProvider";
 
 const DataTable = () => {
-  const { table, renderTableOptions } = usetable();
+  const { table, renderTableOptions } = useTable();
 
   if (!table) {
     return <div>Table is not loaded</div>;
