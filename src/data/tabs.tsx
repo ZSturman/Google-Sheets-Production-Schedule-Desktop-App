@@ -27,7 +27,7 @@ const renderBaseProductColumnDict = (
 ) => {
   const isProductsTab = tab === "products";
   const isProductionScheduleTab = tab === "production_schedule";
-  //const isWorkCenterTab = tab === "work_center";
+  const isWorkCenterTab = tab === "work_center";
 
   const baseProductColumnDict: DataColumnDict = {
     Id: {
@@ -179,25 +179,26 @@ const renderBaseProductColumnDict = (
         cell: {
           view: {
             readOnly: { text: {}, styles: {} },
-            editable: isProductsTab
-              ? {
-                  default: {
-                    button: {
-                      label: "Select Work Center...",
-                      labelIsValue: true,
+            editable:
+              isProductsTab || isProductionScheduleTab
+                ? {
+                    default: {
+                      button: {
+                        label: "Select Work Center...",
+                        labelIsValue: true,
+                      },
+                      styles: {},
                     },
-                    styles: {},
-                  },
-                  editing: {
-                    dropdown: {
-                      placeholder: "Select a Work Center...",
-                      items: workCentersList,
-                      label: "Select",
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select a Work Center...",
+                        items: workCentersList,
+                        label: "Select",
+                      },
+                      styles: {},
                     },
-                    styles: {},
-                  },
-                }
-              : false,
+                  }
+                : false,
           },
           value: {
             type: "text",
@@ -312,36 +313,131 @@ const renderBaseProductColumnDict = (
         },
       },
     },
+    // Requested_Ship_Date: {
+    //   id: "requested_ship_date",
+    //   googleSheetHeader: "Requested Ship Date",
+    //   //toSqlConverter: String,
+    //   columnDef: {
+    //     cell: {
+    //       view: {
+    //         readOnly: {
+    //           date: {
+    //             format: {
+    //               delimiter: "/",
+    //               month: "short",
+    //               day: "DD",
+    //               year: "YYYY",
+    //             },
+    //           },
+    //         },
+
+    //         editable: isProductsTab
+    //           ? {
+    //               default: {
+    //                 button: {
+    //                   labelIsValue: true,
+    //                   label: "Select Date...",
+    //                 },
+    //               },
+    //               editing: {
+    //                 popup: {
+    //                   content: {
+    //                     calendar: {},
+    //                   },
+    //                 },
+    //               },
+    //             }
+    //           : false,
+    //       },
+    //       value: {
+    //         type: "date",
+    //         default: new Date(),
+    //         nullable: false,
+    //         required: true,
+    //       },
+    //     },
+    //   },
+    // },
+    // Requested_Ship_Time: {
+    //   id: "requested_ship_time",
+    //   googleSheetHeader: "Requested Ship Time",
+    //   //toSqlConverter: String,
+    //   columnDef: {
+    //     cell: {
+    //       view: {
+    //         readOnly: {
+    //           time: {},
+    //         },
+
+    //         editable: isProductsTab
+    //           ? {
+    //               default: {
+    //                 button: {
+    //                   labelIsValue: true,
+    //                   label: "Select Time...",
+    //                 },
+    //               },
+    //               editing: {
+    //                 popup: {
+    //                   content: {
+    //                     timepicker: {},
+    //                   },
+    //                 },
+    //               },
+    //             }
+    //           : false,
+    //       },
+    //       value: {
+    //         type: "time",
+    //         default: "00:00",
+    //         nullable: false,
+    //         required: false,
+    //       },
+    //     },
+    //   },
+    // },
     Requested_Ship_Date: {
       id: "requested_ship_date",
       googleSheetHeader: "Requested Ship Date",
-      //toSqlConverter: String,
       columnDef: {
         cell: {
           view: {
             readOnly: {
-              date: {
+              datetime: {
                 format: {
                   delimiter: "/",
                   month: "short",
                   day: "DD",
                   year: "YYYY",
+                  hour: "HH",
+                  minute: "mm",
                 },
               },
             },
-
             editable: isProductsTab
               ? {
                   default: {
                     button: {
                       labelIsValue: true,
-                      label: "Select Date...",
+                      label: "Select Date and Time...",
                     },
                   },
                   editing: {
                     popup: {
                       content: {
-                        calendar: {},
+                        calendar: {
+                          date: {
+                            min: new Date(2000, 0, 1),
+                            max: new Date(2100, 11, 31),
+                            calendar: "month",
+                          },
+                          time: {
+                            type: "24",
+                            stepCount: 1,
+                            min: 0,
+                            max: 1440,
+                          },
+                        },
                       },
                     },
                   },
@@ -349,48 +445,10 @@ const renderBaseProductColumnDict = (
               : false,
           },
           value: {
-            type: "date",
-            default: new Date(),
+            type: "datetime",
+            default: new Date(), // Defaults to current date and time
             nullable: false,
             required: true,
-          },
-        },
-      },
-    },
-    Requested_Ship_Time: {
-      id: "requested_ship_time",
-      googleSheetHeader: "Requested Ship Time",
-      //toSqlConverter: String,
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: {
-              time: {},
-            },
-
-            editable: isProductsTab
-              ? {
-                  default: {
-                    button: {
-                      labelIsValue: true,
-                      label: "Select Time...",
-                    },
-                  },
-                  editing: {
-                    popup: {
-                      content: {
-                        timepicker: {},
-                      },
-                    },
-                  },
-                }
-              : false,
-          },
-          value: {
-            type: "time",
-            default: "00:00",
-            nullable: false,
-            required: false,
           },
         },
       },
@@ -459,7 +517,7 @@ const renderBaseProductColumnDict = (
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
-            editable: !isProductsTab
+            editable: isProductionScheduleTab
               ? {
                   default: {
                     button: {
@@ -495,19 +553,21 @@ const renderBaseProductColumnDict = (
         cell: {
           view: {
             readOnly: {
-              date: {
+              datetime: {
                 format: {
                   delimiter: "/",
                   month: "short",
                   day: "DD",
                   year: "YYYY",
+                  hour: "HH",
+                  minute: "mm",
                 },
               },
             },
             editable: false,
           },
           value: {
-            type: "date",
+            type: "datetime",
             default: new Date(),
           },
         },
@@ -522,19 +582,21 @@ const renderBaseProductColumnDict = (
         cell: {
           view: {
             readOnly: {
-              date: {
+              datetime: {
                 format: {
                   delimiter: "/",
                   month: "short",
                   day: "DD",
                   year: "YYYY",
+                  hour: "HH",
+                  minute: "mm",
                 },
               },
             },
             editable: false,
           },
           value: {
-            type: "date",
+            type: "datetime",
             default: new Date(9999),
           },
         },
@@ -732,7 +794,7 @@ export const productsTab: TabOption = {
   //sqlTableName: "Products",
   googleSheetName: "Products",
   columnDict: renderBaseProductColumnDict("products"),
-  columnData: null
+  columnData: null,
 };
 
 const generateColumnDict = (workCenters: string[]) => {
@@ -799,7 +861,7 @@ export const workCenterSchedulesTab: TabOption = {
       id: "date_weekday_holiday",
       googleSheetHeader: "Date / Weekday / Holiday",
       //toSqlConverter: (value: string): string => {
-        // Normalize and validate the value
+      // Normalize and validate the value
       //   const weekdayRegex =
       //     /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i;
       //   const mmddRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // MM-DD
@@ -837,7 +899,7 @@ export const workCenterSchedulesTab: TabOption = {
     },
     ...generateColumnDict(workCentersList),
   },
-  columnData: null
+  columnData: null,
 };
 
 export const ledgersTab: TabOption = {
@@ -989,7 +1051,7 @@ export const ledgersTab: TabOption = {
       },
     },
   },
-  columnData: null
+  columnData: null,
 };
 
 export const productionScheduleTab: TabOption = {
@@ -999,7 +1061,7 @@ export const productionScheduleTab: TabOption = {
   //sqlTableName: "ProductionSchedule",
   googleSheetName: null,
   columnDict: renderBaseProductColumnDict("production_schedule"),
-  columnData: null
+  columnData: null,
 };
 
 const settingsTab: TabOption = {
@@ -1008,7 +1070,7 @@ const settingsTab: TabOption = {
   //sqlTableName: "Settings",
   googleSheetName: null,
   columnData: null,
-  columnDict: null
+  columnDict: null,
 };
 
 const generateWorkCenterTab = (workCenter: string): TabOption => {
@@ -1024,7 +1086,7 @@ const generateWorkCenterTab = (workCenter: string): TabOption => {
     isWorkCenter: true,
     //sqlTableName: removeAllWhiteSpace(workCenter),
     columnDict: renderBaseProductColumnDict("work_center"),
-    columnData: null
+    columnData: null,
   };
 };
 

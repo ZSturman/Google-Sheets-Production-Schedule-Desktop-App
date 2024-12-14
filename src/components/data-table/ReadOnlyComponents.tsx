@@ -10,6 +10,15 @@ const ReadOnlyComponents: React.FC<ReadOnlyComponentsProps> = ({ readOnlyProps, 
     return <div />;
   }
 
+  if ("datetime" in readOnlyProps) {
+    const dateValue = new Date(value);
+    return (
+      <div>
+        {dateValue.toLocaleString()}
+      </div>
+    )
+  }
+
   return (
     <div>
       {value}

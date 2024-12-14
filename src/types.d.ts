@@ -244,43 +244,38 @@ type BooleanViewProps = BaseViewProps & {
   falseyValue?: string;
 };
 type CheckboxViewProps = BaseViewProps & {};
-type DateViewProps = BaseViewProps & {
+type DateTimeViewProps = BaseViewProps & {
   format?: {
     delimiter?: "-" | "/" | " ";
     year: "YYYY" | "YY" | null;
     month: "MM" | "short" | "full" | null;
     day: "DD" | "short" | "full" | null;
+    hour: "HH" | "hh" | null;
+    minute: "mm" | null;
   };
 };
-type DatePickerViewProps = BaseViewProps & {
-  min?: Date;
-  max?: Date;
-  calendar?: "week" | "month" | "year";
+type DateTimePickerViewProps = BaseViewProps & {
+  date: {
+
+    min?: Date;
+    max?: Date;
+    calendar?: "week" | "month" | "year";
+  }
+  time: {
+    type?: "12" | "24";
+    stepCount?: number;
+    min?: number;
+    max?: number;
+  }
 };
 
 type PriorityViewProps = BaseViewProps & {};
 type PopupViewProps = BaseViewProps & {
   content:
-    | { calendar: DatePickerViewProps }
+    | { calendar: DateTimePickerViewProps }
     | { priority: PriorityViewProps }
-    | { timepicker: TimePickerViewProps };
-};
-type TimeViewProps = BaseViewProps & {
-  format?: {
-    delimiter?: ":" | "." | " " | null;
-    hour?: "HH" | "hh";
-    minute?: "mm" | null;
-    type?: "12" | "24";
-    amPm?: "uppercase" | "lowercase";
-  };
 };
 
-type TimePickerViewProps = BaseViewProps & {
-  type?: "12" | "24";
-  stepCount?: number;
-  min?: number;
-  max?: number;
-};
 type DropdownViewProps = BaseViewProps & {
   placeholder: string;
   items: string[];
@@ -300,10 +295,8 @@ type ViewProps =
   | NumberInputViewProps
   | BooleanViewProps
   | CheckboxViewProps
-  | DateViewProps
+  | DateTimeViewProps
   | PopupViewProps
-  | TimeViewProps
-  | TimePickerViewProps
   | DropdownViewProps
   | ButtonViewProps
   | BaseViewProps;
@@ -312,8 +305,7 @@ type ReadOnlyViewProps =
   | { text: TextViewProps; styles?: UiStyles }
   | { number: NumberViewProps; styles?: UiStyles }
   | { boolean: BooleanViewProps; styles?: UiStyles }
-  | { date: DateViewProps; styles?: UiStyles }
-  | { time: TimeViewProps; styles?: UiStyles }
+  | { datetime: DateTimeViewProps; styles?: UiStyles }
   | { hidden: BaseViewProps; styles?: UiStyles };
 
 type EditableViewProps = 
@@ -326,7 +318,6 @@ type EditingViewProps =
   | { textInput: TextInputViewProps; styles?: UiStyles }
   | { numberInput: NumberInputViewProps; styles?: UiStyles }
   | { popup: PopupViewProps; styles?: UiStyles }
-  | { timePicker: TimePickerViewProps; styles?: UiStyles }
   | { dropdown: DropdownViewProps; styles?: UiStyles }
   | { checkbox: CheckboxViewProps; styles?: UiStyles }
   
@@ -365,8 +356,7 @@ type CellValueStatus = {
 type ValueSpecifics =
   | { type: "text"; default: string }
   | { type: "number"; default: number }
-  | { type: "date"; default: Date }
-  | { type: "time"; default: string }
+  | { type: "datetime"; default: Date }
   | { type: "boolean"; default: boolean }
   | { type: "checkbox"; default: boolean };
 
@@ -406,7 +396,6 @@ type ProductData = {
   "Length": number;
   "Production Quantity": number;
   "Requested Ship Date": Date;
-  "Requested Ship Time": string;
   "Set Up": number;
   "UPH": number;
   "Cut": CutColumn;

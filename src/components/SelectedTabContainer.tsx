@@ -4,6 +4,8 @@ import DataTable from "./data-table/DataTable";
 import { TableProvider } from "../context/TableProvider";
 import ErrorBoundary from "./ErrorBoundary";
 import GanttDisplay from "./GanttDisplay";
+// import CurrentProduct from "./CurrentProduct";
+import { GanttProvider } from "../context/GanttProvider";
 
 const SelectedTab = () => {
   const { selectedTab } = useTab();
@@ -16,13 +18,15 @@ const SelectedTab = () => {
     if (selectedTab.isWorkCenter) {
       return (
         <TableProvider key={selectedTab.id}>
-        <ErrorBoundary>
-          <GanttDisplay />
-          <DataTable />
-        </ErrorBoundary>
-      </TableProvider>
-
-      )
+          <GanttProvider>
+            <ErrorBoundary>
+             {/* <CurrentProduct />  */}
+              <GanttDisplay />
+              <DataTable />
+            </ErrorBoundary>
+          </GanttProvider>
+        </TableProvider>
+      );
     }
 
     return (

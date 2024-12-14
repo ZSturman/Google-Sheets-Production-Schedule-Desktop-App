@@ -4,23 +4,30 @@ import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import { useDebounce } from "../../hooks/useDebounce";
 
 type CellAsChevronAndNumberInputProps = {
-    value: string;
-    onSave: (newValue: string) => void;
-    className?: string;
-  };
-  
-const CellAsChevronAndNumberInput: React.FC<CellAsChevronAndNumberInputProps> = ({ value, onSave }) => {
+  value: string;
+  onSave: (newValue: string) => void;
+  chevronProps: ChevronViewProps;
+  numberInputProps: NumberInputViewProps;
+};
+
+const CellAsChevronAndNumberInput: React.FC<
+  CellAsChevronAndNumberInputProps
+> = ({ value, onSave, chevronProps, numberInputProps }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState<string>(value);
   const debouncedChevronValue = useDebounce(currentValue, 5000);
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const stepCount = chevronProps.stepCount || 1;
+
+  const minValue = numberInputProps.min || chevronProps.min || 0;
 
   useEffect(() => {
     if (value === "NaN") {
       // ADD TO LOGS, AND TOOLTIP. PLUS MAKE IT SO ATTENTION IS REQUIRED
       setCurrentValue("0");
     }
-  }, [])
+  }, []);
 
   // Handle input change
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,9 +35,14 @@ const CellAsChevronAndNumberInput: React.FC<CellAsChevronAndNumberInputProps> = 
   };
 
   const incrementValue = () =>
-    setCurrentValue(String(Number(currentValue) + 1));
-  const decrementValue = () =>
-    setCurrentValue(String(Number(currentValue) - 1));
+    setCurrentValue(String(Number(currentValue) + stepCount));
+  const decrementValue = () => {
+    if (Number(currentValue) - stepCount <= minValue) {
+      setCurrentValue(String(minValue));
+      return;
+    }
+    setCurrentValue(String(Number(currentValue) - stepCount));
+  };
 
   // Save value and exit edit mode
   const handleSave = () => {
@@ -50,7 +62,10 @@ const CellAsChevronAndNumberInput: React.FC<CellAsChevronAndNumberInputProps> = 
   // Exit editing when clicking outside or pressing Enter
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
         handleSave();
       }
     };
@@ -93,13 +108,15 @@ const CellAsChevronAndNumberInput: React.FC<CellAsChevronAndNumberInputProps> = 
         />
       ) : (
         <>
-        <Button onClick={incrementValue} variant="ghost" size="sm">
-        <BsChevronCompactUp />
-      </Button>
-      <Button onClick={() => setIsEditing(true)}>{currentValue || "Click to edit"}</Button>
-      <Button onClick={decrementValue} variant="ghost" size="sm">
-        <BsChevronCompactDown />
-      </Button>
+          <Button onClick={incrementValue} variant="ghost" size="sm">
+            <BsChevronCompactUp />
+          </Button>
+          <Button onClick={() => setIsEditing(true)}>
+            {currentValue || "Click to edit"}
+          </Button>
+          <Button onClick={decrementValue} variant="ghost" size="sm">
+            <BsChevronCompactDown />
+          </Button>
         </>
       )}
     </div>

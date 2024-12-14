@@ -74,17 +74,19 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   const [productsPopulated, setProductsPopulated] = useState(false);
   const [workCenterSchedulesPopulated, setWorkCenterSchedulesPopulated] =
     useState(false);
-  const [ledgerPopulated, setLedgerPopulated] = useState(false);
+  //const [ledgerPopulated, setLedgerPopulated] = useState(false);
 
+  const [productsDebounceTimer, setProductsDebounceTimer] = useState<
+    number | null
+  >(null);
+  const [
+    workCenterSchedulesDebounceTimer,
+    setWorkCenterSchedulesDebounceTimer,
+  ] = useState<number | null>(null);
+  const [ledgerDebounceTimer, setLedgerDebounceTimer] = useState<number | null>(
+    null
+  );
 
-
-  const [productsDebounceTimer, setProductsDebounceTimer] = useState<number | null>(null);
-  const [workCenterSchedulesDebounceTimer, setWorkCenterSchedulesDebounceTimer] = useState<number | null>(null);
-  const [ledgerDebounceTimer, setLedgerDebounceTimer] = useState<number | null>(null);
-
-  const [productsHeaders, setProductsHeaders] = useState<string[]>([]);
-  const [workCenterSchedulesHeaders, setWorkCenterSchedulesHeaders] = useState<string[]>([]);
-  const [ledgerHeaders, setLedgerHeaders] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(Date.now());
@@ -95,7 +97,11 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     data: ProductData | WorkCenterScheduleData | LedgerData
   ) => {
     console.log("DATA CHANGED", tab, actionType, data);
-    console.log(productsDebounceTimer, workCenterSchedulesDebounceTimer, ledgerDebounceTimer);
+    console.log(
+      productsDebounceTimer,
+      workCenterSchedulesDebounceTimer,
+      ledgerDebounceTimer
+    );
 
     try {
       // Determine the relevant timer state and commit function
@@ -124,25 +130,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
           return;
         }
 
-        if (tab.id === "products") {
-          console.log("Is Products");
-          if (actionType === "add") {
-            if (actionType === "add") {
-              dataRef.current.products = [
-                ...dataRef.current.products,
-                { ...data, id: uuidv4() } as ProductData, // Ensure id is unique
-              ];
-            }
-          } else {
-            console.log("Is Update");
-            const updated = dataRef.current.products.map((product) =>
-              product.id === (data as ProductData).id
-                ? (data as ProductData)
-                : product
-            );
-            dataRef.current.products = updated;
-          }
-        } else if (tab.id === "work_center_schedules") {
+        if (tab.id === "work_center_schedules") {
           console.log("Is WorkCenterSchedules");
           if (actionType === "add") {
             console.log("Is Add");
@@ -174,12 +162,33 @@ export const DataProvider = ({ children }: DataProviderProps) => {
             );
             dataRef.current.ledger = updated;
           }
+        } else {
+          if (actionType === "add") {
+            if (actionType === "add") {
+              dataRef.current.products = [
+                ...dataRef.current.products,
+                { ...data, id: uuidv4() } as ProductData, // Ensure id is unique
+              ];
+            }
+          } else {
+            const updated = dataRef.current.products.map((product) =>
+              product.id === (data as ProductData).id
+                ? (data as ProductData)
+                : product
+            );
+            dataRef.current.products = updated;
+
+            if (tab.isWorkCenter) {
+              console.log("Is WorkCenter");
+
+              await processSpecificWorkCenter(tab.name as WorkCenter);
+            }
+          }
         }
       }
 
       setState(dataRef.current); // Updates the state
       setUpdatedAt(Date.now()); // Trigger a timestamp update
-
 
       timerStateSetter((prevTimer) => {
         if (prevTimer !== null) {
@@ -229,11 +238,9 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     }
 
     setState({ ...dataRef.current });
-  }
-
+  };
 
   const processAllWorkCenters = async () => {
-
     console.log("Products Populated", productsPopulated);
     console.log("WorkCenterSchedules Populated", workCenterSchedulesPopulated);
     if (!productsPopulated || !workCenterSchedulesPopulated) {
@@ -242,19 +249,18 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     } else {
       console.log("Populated");
     }
-  
+
     const workCenterDB: WorkCenter[] = workCenters.filter(
       (workCenter) =>
         workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
     );
-  
+
     // Calculate Schedule Start and End for each work center
     const { products, workCenterSchedules } = dataRef.current;
-  
-    console.log("workCenterSchedules", workCenterSchedules);
-  
-    const updatedRows: ProductData[] = [];
 
+    console.log("workCenterSchedules", workCenterSchedules);
+
+    const updatedRows: ProductData[] = [];
 
     for (const workCenter of workCenterDB) {
       const returnedTimes = await calculateScheduleStartAndEnd(
@@ -423,9 +429,9 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       handleDataChange,
       handleDeleteRows,
       loading,
-      updatedAt, 
+      updatedAt,
       processAllWorkCenters,
-      processSpecificWorkCenter
+      processSpecificWorkCenter,
     }),
     [state, loading, updatedAt] // Memoize with `updatedAt`
   );
@@ -504,8 +510,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     return transformedRecords;
   };
 
-
-
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
@@ -527,7 +531,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
 
               switch (tab.id) {
                 case "products":
-                  setProductsHeaders(headers);
+                  // setProductsHeaders(headers);
                   if (records.length === 0) {
                     console.log("Seeding defaults for Products");
                     await seedDefaults("Products");
@@ -543,8 +547,8 @@ export const DataProvider = ({ children }: DataProviderProps) => {
 
                   setProductsPopulated(true);
                   break;
-                case "ledger": 
-                 setLedgerHeaders(headers);
+                case "ledger":
+                  // setLedgerHeaders(headers);
                   if (records.length === 0) {
                     await seedDefaults("Ledger");
                   }
@@ -556,11 +560,11 @@ export const DataProvider = ({ children }: DataProviderProps) => {
                   dataRef.current.ledger =
                     transformedLedgerRecords as LedgerData[];
 
-                    setLedgerPopulated(true);
+                  //setLedgerPopulated(true);
 
                   break;
                 case "work_center_schedules":
-                  setWorkCenterSchedulesHeaders(headers);
+                  // setWorkCenterSchedulesHeaders(headers);
                   if (records.length === 0) {
                     await seedDefaults("WorkCenterSchedules");
                   }
@@ -596,7 +600,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       initialize();
     }
   }, [credentialsPath, sheetIdentifier]);
-
 
   return (
     <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>

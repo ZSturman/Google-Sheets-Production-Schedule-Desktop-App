@@ -30,8 +30,7 @@ import CellAsChevronAndNumberInput from "../components/data-table/CellAsChevronA
 import CellAsNumberInput from "../components/data-table/CellAsNumberInput";
 import CellAsDropdown from "../components/data-table/CellAsDropdown";
 import CellAsTextInput from "../components/data-table/CellAsTextInput";
-import CellAsPopupAndTimePicker from "../components/data-table/CellAsPopupAndTimePicker";
-import CellAsPopupAndCalendar from "../components/data-table/CellAsPopupAndCalendar";
+import CellAsPopupDateTimePicker from "../components/data-table/CellAsPopupDateTimePicker";
 import {
   AddOption,
   DeleteOption,
@@ -60,7 +59,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     handleDataChange,
     handleDeleteRows,
     processAllWorkCenters,
-    processSpecificWorkCenter,
   } = useData();
   const { selectedTab } = useTab();
 
@@ -76,11 +74,20 @@ export const TableProvider = ({ children }: TableProviderProps) => {
           data = state.ledger;
         } else {
           if (selectedTab.isWorkCenter) {
-            data = state.products.filter(
-              (row) => row["work_center"] === selectedTab.name
-            );
+            data = state.products
+              .filter((row) => row["work_center"] === selectedTab.name)
+              .sort((a, b) => {
+                const aaPriority = parseInt(a["priority"]);
+                const bbPriority = parseInt(b["priority"]);
+                if (aaPriority < bbPriority) {
+                  return -1;
+                }
+                if (aaPriority > bbPriority) {
+                  return 1;
+                }
+                return 0;
+              });
           } else {
-            console.log("Selected Tab is not Work Center", selectedTab);
             data = state.products;
           }
         }
@@ -251,6 +258,8 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                       onSave={(newValue) => {
                         updateCellValue(row, column, newValue);
                       }}
+                      chevronProps={cell.view.editable.default.chevron}
+                      numberInputProps={cell.view.editable.editing.numberInput}
                     />
                   );
                 } else {
@@ -299,34 +308,18 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                   };
                 }
 
-                if ("timepicker" in cell.view.editable.editing.popup.content) {
-                  return (
-                    <CellAsPopupAndTimePicker
-                      value={row.original[column.id]}
-                      onSave={(newValue) => {
-                        updateCellValue(row, column, newValue);
-                      }}
-                      triggerProps={buttonProps}
-                      popupProps={cell.view.editable.editing.popup}
-                      timePickerProps={
-                        cell.view.editable.editing.popup.content.timepicker
-                      }
-                    />
-                  );
-                }
-
                 if ("calendar" in cell.view.editable.editing.popup.content) {
                   return (
-                    <CellAsPopupAndCalendar
+                    <CellAsPopupDateTimePicker
                       value={row.original[column.id]}
                       onSave={(newValue) => {
                         updateCellValue(row, column, newValue);
                       }}
-                      triggerProps={buttonProps}
-                      popupProps={cell.view.editable.editing.popup}
-                      calendarProps={
-                        cell.view.editable.editing.popup.content.calendar
-                      }
+                      //triggerProps={buttonProps}
+                      //popupProps={cell.view.editable.editing.popup}
+                      // calendarProps={
+                      //   cell.view.editable.editing.popup.content.calendar
+                      // }
                     />
                   );
                 }

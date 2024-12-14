@@ -56,7 +56,6 @@ const formSchema = z.object({
     z.number().min(0, "UPH cannot be negative")
   ),
   requestedShipDate: z.string().nonempty("Requested Ship Date is required"),
-  requestedShipTime: z.string().nonempty("Requested Ship Time is required"),
   cut: z.enum([...cutOptions] as [string, ...string[]]),
   extrusion: z.enum([...extrusionOptions] as [string, ...string[]]),
   ground: z.enum([...groundOptions] as [string, ...string[]]),
@@ -84,8 +83,7 @@ const NewProductForm = ({
       workCenter: "UNASSIGNED",
       quantity: 10, // Default as a number
       length: 100, // Default as a number
-      requestedShipDate: new Date().toISOString().split("T")[0],
-      requestedShipTime: "00:00",
+      requestedShipDate: new Date().toISOString().slice(0, 16),
       setUp: 120, // Default as a number
       uph: 10, // Default as a number
       cut: "_",
@@ -113,7 +111,6 @@ const NewProductForm = ({
         ? (values.workCenter as WorkCenter)
         : "UNASSIGNED",
       "Requested Ship Date": new Date(values.requestedShipDate),
-      "Requested Ship Time": values.requestedShipTime,
       "Set Up": values.setUp,
       UPH: values.uph,
       Cut: extraInfo ? (values.cut as CutColumn) : "_",
@@ -123,7 +120,7 @@ const NewProductForm = ({
       Ends: extraInfo ? (values.ends as EndsColumn) : "_",
       "Balance Quantity": 0,
       "Job Number": values.jobNumber,
-      "Production Quantity": values.length * values.quantity,
+      "Production Quantity": values.quantity,
       "Scheduled Start": new Date(1970),
       "Scheduled End": new Date(9999, 1, 1),
     };
@@ -312,40 +309,24 @@ const NewProductForm = ({
                   )}
                 />
               </div>
-
               <div className="col-span-1">
-                {/** Requested Ship Date */}
-                <FormField
-                  control={form.control}
-                  name="requestedShipDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Requested Ship Date</FormLabel>
-                      <FormControl>
-                        <Input className="w-full" type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+  {/** Requested Ship Date */}
+  <FormField
+    control={form.control}
+    name="requestedShipDate"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>Requested Ship Date</FormLabel>
+        <FormControl>
+          <Input className="w-full" type="datetime-local" {...field} />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+</div>
 
-              <div className="col-span-1">
-                {/** Requested Ship Time */}
-                <FormField
-                  control={form.control}
-                  name="requestedShipTime"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Requested Ship Time</FormLabel>
-                      <FormControl>
-                        <Input className="w-full" type="time" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+
             </div>
 
             {!assignWorkCenter && (
