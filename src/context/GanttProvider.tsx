@@ -4,7 +4,7 @@ import {
   useContext,
   ReactNode,
   useEffect,
-  useState
+  useState,
 } from "react";
 import { useData } from "./DataProvider";
 
@@ -12,10 +12,9 @@ import { useTab } from "./TabProvider";
 
 import { defaultOnOffTime } from "../data/defaults";
 
-
 type GanttContextType = {
   ganttDays: GanttDays[];
-  ganttProducts: GanttProductData[]
+  ganttProducts: GanttProductData[];
 };
 
 const GanttContext = createContext<GanttContextType | undefined>(undefined);
@@ -30,9 +29,6 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
 
   const [ganttDays, setGanttDays] = useState<GanttDays[]>([]);
   const [ganttProducts, setGanttProducts] = useState<GanttProductData[]>([]);
-
-
-
 
   const getWorkCenterHours = (
     workCenter: string,
@@ -74,139 +70,151 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
     return { open: openingDate, closing: closingDate };
   };
 
-  // useEffect(() => {
-  //   if (!loading) {
-  //     if (selectedTab && selectedTab.isWorkCenter) {
-  //       const data = state.products
-  //         .filter((row) => row["work_center"] === selectedTab.name)
-  //         .sort((a, b) => {
-  //           const aaPriority = parseInt(a["priority"]);
-  //           const bbPriority = parseInt(b["priority"]);
-  //           if (aaPriority < bbPriority) {
-  //             return -1;
-  //           }
-  //           if (aaPriority > bbPriority) {
-  //             return 1;
-  //           }
-  //           return 0;
-  //         });
-
-  //       if (data.length > 0) {
-  //         const firstRow = data[0];
-  //         const lastRow = data[data.length - 1];
-
-  //         const firstRowScheduledStart = new Date(firstRow["scheduled_start"]);
-  //         const lastRowScheduledEnd = new Date(lastRow["scheduled_end"]);
-
-  //         const ganttDays: GanttDays[] = [];
-  //        let currentDate = new Date(firstRowScheduledStart); 
-  //         while (currentDate < lastRowScheduledEnd) {
-  //           const { open, closing } = getWorkCenterHours(
-  //             selectedTab.name,
-  //             currentDate,
-  //             state.workCenterSchedules
-  //           );
-
-  //           ganttDays.push({
-  //             date: new Date(currentDate),
-  //             opening: new Date(open),
-  //             closing: new Date(closing)
-  //           });
-
-  //           currentDate.setDate(currentDate.getDate() + 1);
-  //         }
-
-  //         const ganttProducts: GanttProductData[] = data.map((row) => ({
-  //           start: new Date(row["scheduled_start"]),
-  //           end: new Date(row["scheduled_end"]),
-  //           due: new Date(row["requested_ship_date"]),
-  //           title: row["job_number"],
-  //           description: row["text"],
-  //           customer: row["customer"],
-  //           productionQuantity: parseInt(row["production_quantity"]),
-  //           balanceQuantity: parseInt(row["balance_quantity"]),
-  //         }));
-
-  //           setGanttDays(ganttDays);
-  //           setGanttProducts(ganttProducts);
-  //       }
-  //     }
-  //   }
-  // }, [state, selectedTab, updatedAt, loading]);
-
-
   useEffect(() => {
     if (!loading) {
-      if (selectedTab && selectedTab.isWorkCenter) {
-        const data = state.products
-          .filter((row) => row["work_center"] === selectedTab.name)
-          .sort((a, b) => {
+      if (selectedTab) {
+        if (selectedTab.isWorkCenter) {
+          const data = state.products
+            .filter((row) => row["work_center"] === selectedTab.name)
+            .sort((a, b) => {
+              const aaPriority = parseInt(a["priority"]);
+              const bbPriority = parseInt(b["priority"]);
+              return aaPriority - bbPriority;
+            });
+
+          if (data.length > 0) {
+            // Get the earliest and latest dates across start, end, and due
+            const allDates = data.flatMap((row) => [
+              new Date(row["scheduled_start"]),
+              new Date(row["scheduled_end"]),
+              new Date(row["requested_ship_date"]),
+            ]);
+            let minDate = new Date(
+              Math.min(...allDates.map((d) => d.getTime()))
+            );
+
+            // If the current date is before the minDate, set it to minDate
+            if (new Date() < minDate) {
+              minDate = new Date();
+            }
+
+            let maxDate = new Date(
+              Math.max(...allDates.map((d) => d.getTime()))
+            );
+            maxDate.setDate(maxDate.getDate() + 1);
+
+            // Generate ganttDays
+            const ganttDays: GanttDays[] = [];
+            let currentDate = new Date(minDate);
+            while (currentDate < maxDate) {
+              const { open, closing } = getWorkCenterHours(
+                selectedTab.name,
+                currentDate,
+                state.workCenterSchedules
+              );
+
+              ganttDays.push({
+                date: new Date(currentDate),
+                opening: new Date(open),
+                closing: new Date(closing),
+              });
+
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Generate ganttProducts
+            const ganttProducts: GanttProductData[] = data.map((row) => ({
+              start: new Date(row["scheduled_start"]),
+              end: new Date(row["scheduled_end"]),
+              due: new Date(row["requested_ship_date"]),
+              title: row["job_number"],
+              description: row["text"],
+              customer: row["customer"],
+              productionQuantity: parseInt(row["production_quantity"]),
+              balanceQuantity: parseInt(row["balance_quantity"]),
+            }));
+
+            // Update state
+            setGanttDays(ganttDays);
+            setGanttProducts(ganttProducts);
+          }
+        } else {
+          const data = state.products.sort((a, b) => {
             const aaPriority = parseInt(a["priority"]);
             const bbPriority = parseInt(b["priority"]);
             return aaPriority - bbPriority;
           });
-  
-        if (data.length > 0) {
-          // Get the earliest and latest dates across start, end, and due
-          const allDates = data.flatMap((row) => [
-            new Date(row["scheduled_start"]),
-            new Date(row["scheduled_end"]),
-            new Date(row["requested_ship_date"]),
-          ]);
-          let minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
 
-          // If the current date is before the minDate, set it to minDate
-          if (new Date() < minDate) {
-            minDate = new Date();
-          }
-
-
-          let maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
-          maxDate.setDate(maxDate.getDate() + 1);
-  
-          // Generate ganttDays
-          const ganttDays: GanttDays[] = [];
-          let currentDate = new Date(minDate);
-          while (currentDate < maxDate) {
-            const { open, closing } = getWorkCenterHours(
-              selectedTab.name,
-              currentDate,
-              state.workCenterSchedules
+          if (data.length > 0) {
+            // Get the earliest and latest dates across start, end, and due
+            const allDates = data.flatMap((row) => [
+              new Date(row["scheduled_start"]),
+              new Date(row["scheduled_end"]),
+              new Date(row["requested_ship_date"]),
+            ]);
+            let minDate = new Date(
+              Math.min(...allDates.map((d) => d.getTime()))
             );
-  
-            ganttDays.push({
-              date: new Date(currentDate),
-              opening: new Date(open),
-              closing: new Date(closing),
-            });
-  
-            currentDate.setDate(currentDate.getDate() + 1);
+
+            // If the current date is before the minDate, set it to minDate
+            if (new Date() < minDate) {
+              minDate = new Date();
+            }
+
+            let maxDate = new Date(
+              Math.max(...allDates.map((d) => d.getTime()))
+            );
+            maxDate.setDate(maxDate.getDate() + 1);
+            // Generate ganttDays
+            const ganttDays: GanttDays[] = [];
+            let currentDate = new Date(minDate);
+            while (currentDate < maxDate) {
+              const { open, closing } = getWorkCenterHours(
+                selectedTab.name,
+                currentDate,
+                state.workCenterSchedules
+              );
+
+              ganttDays.push({
+                date: new Date(currentDate),
+                opening: new Date(open),
+                closing: new Date(closing),
+              });
+
+              currentDate.setDate(currentDate.getDate() + 1);
+            }
+
+            // Generate ganttProducts
+            const ganttProducts: GanttProductData[] = data.map((row) => ({
+              start: new Date(row["scheduled_start"]),
+              end: new Date(row["scheduled_end"]),
+              due: new Date(row["requested_ship_date"]),
+              title: row["job_number"],
+              description: row["text"],
+              customer: row["customer"],
+              productionQuantity: parseInt(row["production_quantity"]),
+              balanceQuantity: parseInt(row["balance_quantity"]),
+            }));
+
+            // Update state
+            setGanttDays(ganttDays);
+            setGanttProducts(ganttProducts);
           }
-  
-          // Generate ganttProducts
-          const ganttProducts: GanttProductData[] = data.map((row) => ({
-            start: new Date(row["scheduled_start"]),
-            end: new Date(row["scheduled_end"]),
-            due: new Date(row["requested_ship_date"]),
-            title: row["job_number"],
-            description: row["text"],
-            customer: row["customer"],
-            productionQuantity: parseInt(row["production_quantity"]),
-            balanceQuantity: parseInt(row["balance_quantity"]),
-          }));
-  
-          // Update state
-          setGanttDays(ganttDays);
-          setGanttProducts(ganttProducts);
         }
       }
     }
   }, [state, selectedTab, updatedAt, loading]);
 
-  return <GanttContext.Provider value={{
-    ganttDays,
-    ganttProducts
-  }}>{children}</GanttContext.Provider>;
+  return (
+    <GanttContext.Provider
+      value={{
+        ganttDays,
+        ganttProducts,
+      }}
+    >
+      {children}
+    </GanttContext.Provider>
+  );
 };
 
 export const useGantt = () => {

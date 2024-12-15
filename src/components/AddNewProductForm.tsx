@@ -74,6 +74,8 @@ const NewProductForm = ({
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+
+
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -96,6 +98,10 @@ const NewProductForm = ({
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+
+    const formattedDate = new Date(values.requestedShipDate).toISOString();
+
+    
     const newRow: ProductData = {
       id: uuidv4(),
       Customer: values.customer,
@@ -110,7 +116,7 @@ const NewProductForm = ({
       "Work Center": assignWorkCenter
         ? (values.workCenter as WorkCenter)
         : "UNASSIGNED",
-      "Requested Ship Date": new Date(values.requestedShipDate),
+      "Requested Ship Date": new Date(formattedDate),
       "Set Up": values.setUp,
       UPH: values.uph,
       Cut: extraInfo ? (values.cut as CutColumn) : "_",

@@ -59,22 +59,17 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 type DataProviderProps = {
   children: ReactNode;
-  //db: Database;
 };
 
 export const DataProvider = ({ children }: DataProviderProps) => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
-  // const [state, dispatch] = useReducer(dataReducer, initialState);
   const [state, setState] = useState<DataState>(initialState);
-
   const dataRef = useRef<DataState>(initialState);
-  //const originalDataRef = useRef<DataState>(initialState);
   const isInitialized = useRef(false);
 
   const [productsPopulated, setProductsPopulated] = useState(false);
   const [workCenterSchedulesPopulated, setWorkCenterSchedulesPopulated] =
     useState(false);
-  //const [ledgerPopulated, setLedgerPopulated] = useState(false);
 
   const [productsDebounceTimer, setProductsDebounceTimer] = useState<
     number | null
@@ -87,7 +82,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     null
   );
 
-
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(Date.now());
 
@@ -96,7 +90,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     actionType: "add" | "update",
     data: ProductData | WorkCenterScheduleData | LedgerData
   ) => {
-    console.log("DATA CHANGED", tab, actionType, data);
     console.log(
       productsDebounceTimer,
       workCenterSchedulesDebounceTimer,
@@ -206,7 +199,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   };
 
   const processSpecificWorkCenter = async (workCenter: WorkCenter) => {
-    console.log("PROCESSING WORK CENTER", workCenter)
+    console.log("PROCESSING WORK CENTER", workCenter);
     if (!productsPopulated || !workCenterSchedulesPopulated) {
       return;
     }
@@ -601,6 +594,18 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       initialize();
     }
   }, [credentialsPath, sheetIdentifier]);
+
+  // Timeout logic for reloading if loading remains true
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log("Loading timeout reached, reloading...");
+        window.location.reload(); // Optionally reload the page
+      }
+    }, 3000); // 3 seconds timeout
+
+    return () => clearTimeout(timeout); // Cleanup on component unmount or loading state change
+  }, [loading]);
 
   return (
     <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { format, isSameDay, startOfDay, endOfDay } from "date-fns";
+import { format, isSameDay, startOfDay } from "date-fns";
 import { Button } from "../ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import DayTimeline from "./DayTimeline";
@@ -9,13 +9,6 @@ export default function TimelineComponent() {
   const { ganttProducts, ganttDays } = useGantt();
 
   const [currentDate, setCurrentDate] = useState(new Date());
-
-  // const sortedDates = useMemo(() => {
-  //   const allDates = ganttProducts.flatMap(item => [item.start, item.end, item.due])
-  //   return [...new Set(allDates.map(date => startOfDay(date).getTime()))]
-  //     .sort((a, b) => a - b)
-  //     .map(timestamp => new Date(timestamp))
-  // }, [ganttProducts])
 
   const sortedDates = useMemo(() => {
     const allDates = ganttDays.map((day) => day.date);

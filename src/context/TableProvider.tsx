@@ -58,8 +58,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     loading,
     handleDataChange,
     handleDeleteRows,
-    processAllWorkCenters,
-    processSpecificWorkCenter
+    processAllWorkCenters
   } = useData();
   const { selectedTab } = useTab();
 
@@ -170,7 +169,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     }
     return Object.values(selectedTab.columnDict).map(
       ({ googleSheetHeader, id, columnDef }) => {
-        const { headerFunction, cell, enableHiding, enableSorting, viewable } =
+        const { headerFunction, cell, enableHiding, enableSorting } =
           columnDef || {};
 
 
@@ -310,6 +309,8 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                     label: "Select",
                   };
                 }
+
+                console.log("Button props", buttonProps);
 
                 if ("calendar" in cell.view.editable.editing.popup.content) {
                   return (

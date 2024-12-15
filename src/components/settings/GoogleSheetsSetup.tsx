@@ -82,6 +82,9 @@ const GoogleSheetsSetup: React.FC = () => {
             Go to "APIs & Services" {'>'} "Credentials" and click "Create Credentials." Select
             "Service Account."
           </p>
+
+          <p className="text-gray-700">If it asks you what data you will be accessing, select "Application"</p>
+
           <p className="text-gray-700">
             Provide a name for the service account and follow the prompts. For the role,
             select "Editor," then click "Continue" and "Done."
@@ -91,7 +94,7 @@ const GoogleSheetsSetup: React.FC = () => {
         <section>
           <h2 className="text-xl font-semibold mb-2">Step 6: Download the Credentials JSON</h2>
           <p className="text-gray-700">
-            Go back to the "Credentials" page in the Google Cloud Console. Click on the
+            Click on the 'Credentials' tab or go back to the "Credentials" page in the Google Cloud Console. Click on the
             service account you just created.
           </p>
           <p className="text-gray-700">

@@ -1042,6 +1042,6 @@ export const sidebarTabGroups: SidebarTabGroup[] = [
   { groupHeader: "Work Centers", groupTabs: workCenterTabs },
   {
     groupHeader: "Settings",
-    groupTabs: [settingsTab, workCenterSchedulesTab, ledgersTab],
+    groupTabs: [settingsTab, workCenterSchedulesTab, ledgersTab ],
   },
 ];

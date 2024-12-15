@@ -11,7 +11,7 @@ import { useCredentials } from "../context/CredentialProvider";
 const SelectedTab = () => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
 
-  if (!credentialsPath || !sheetIdentifier) {
+  if (!credentialsPath || !sheetIdentifier || sheetIdentifier === "error" || credentialsPath === "error") {
     return <SettingsContainer />;
   }
 
@@ -36,6 +36,21 @@ const SelectedTab = () => {
           </GanttProvider>
         </TableProvider>
       );
+    }
+
+    if (selectedTab.id === "production_schedule") {
+      return (
+        <TableProvider key={selectedTab.id}>
+          <GanttProvider>
+            <ErrorBoundary>
+         
+             <TimelineComponent  />
+              <DataTable />
+            </ErrorBoundary>
+          </GanttProvider>
+        </TableProvider>
+      );
+
     }
 
     return (

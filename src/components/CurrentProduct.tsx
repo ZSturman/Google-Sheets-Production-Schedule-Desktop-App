@@ -1,7 +1,7 @@
 import { useGantt } from "../context/GanttProvider";
 
 const CurrentProduct = () => {
-  const { ganttDays, ganttProducts } = useGantt();
+  const {  ganttProducts } = useGantt();
 
   if (ganttProducts.length === 0) {
     return <div>No jobs scheduled for this work center</div>;
