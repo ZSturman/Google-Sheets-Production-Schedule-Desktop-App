@@ -20,8 +20,10 @@ const fetchGoogleSheetsData = async (
     return data; // Return the fetched data
   } catch (error) {
     console.error("Error fetching Google Sheet data:", error);
-    throw error; // Rethrow the error for the caller to handle
+    throw error; 
   }
 };
 
 export default fetchGoogleSheetsData;
+
+

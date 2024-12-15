@@ -16,6 +16,7 @@ import {
   workCenterSchedulesTab,
 } from "../data/tabs";
 import {
+  defaultTables,
   getDefaultLedgersRow,
   getDefaultProductsRow,
   getDefaultWorkCenterSchedules,
@@ -25,6 +26,7 @@ import fetchGoogleSheetsData from "../data/getGoogleSheetsData";
 import { v4 as uuidv4 } from "uuid";
 import { calculateScheduleStartAndEnd } from "../data/calculateScheduledStartAndEnd";
 import { workCenters } from "../data/lists";
+import { createGoogleSheetWithHeaders } from "../data/createGoogleSheet";
 
 type DataState = {
   products: ProductData[];
@@ -488,7 +490,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
             col.googleSheetHeader?.trim().toLowerCase() ===
             header.trim().toLowerCase()
         );
-        if (column) {
+        if (column && column.id !== "id") {
           record[column.id] = row[index];
         }
       });
@@ -509,82 +511,130 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       setLoading(true);
       if (isInitialized.current) return;
       isInitialized.current = true;
-
+  
       try {
-        allTabs.forEach(async (tab) => {
+        for (const tab of allTabs) {
           if (tab.googleSheetName && tab.columnDict) {
-            const googleSheetData = await fetchGoogleSheetsData(
-              credentialsPath,
-              sheetIdentifier,
-              tab
-            );
-
-            if (googleSheetData) {
-              const headers = googleSheetData[0];
-              const records = googleSheetData.slice(1);
-
-              switch (tab.id) {
-                case "products":
-                  // setProductsHeaders(headers);
-                  if (records.length === 0) {
-                    console.log("Seeding defaults for Products");
-                    await seedDefaults("Products");
-                  }
-                  const transformedProductRecords = await transformRecords(
-                    tab,
-                    records,
-                    headers
-                  );
-                  console.log("Transformed Records", transformedProductRecords);
-                  dataRef.current.products =
-                    transformedProductRecords as ProductData[];
-
-                  setProductsPopulated(true);
-                  break;
-                case "ledger":
-                  // setLedgerHeaders(headers);
-                  if (records.length === 0) {
-                    await seedDefaults("Ledger");
-                  }
-                  const transformedLedgerRecords = await transformRecords(
-                    tab,
-                    records,
-                    headers
-                  );
-                  dataRef.current.ledger =
-                    transformedLedgerRecords as LedgerData[];
-
-                  //setLedgerPopulated(true);
-
-                  break;
-                case "work_center_schedules":
-                  // setWorkCenterSchedulesHeaders(headers);
-                  if (records.length === 0) {
-                    await seedDefaults("WorkCenterSchedules");
-                  }
+            try {
+              // Attempt to fetch data from the Google Sheet
+              const googleSheetData = await fetchGoogleSheetsData(
+                credentialsPath,
+                sheetIdentifier,
+                tab
+              );
+  
+              if (googleSheetData) {
+                const headers = googleSheetData[0];
+                const records = googleSheetData.slice(1);
+  
+                switch (tab.id) {
+                  case "products":
+                    if (records.length === 0) {
+                      console.log("Seeding defaults for Products");
+                      await seedDefaults("Products");
+                    }
+                    const transformedProductRecords = await transformRecords(
+                      tab,
+                      records,
+                      headers
+                    );
+                    dataRef.current.products =
+                      transformedProductRecords as ProductData[];
+                    setProductsPopulated(true);
+                    break;
+                  case "ledger":
+                    if (records.length === 0) {
+                      await seedDefaults("Ledger");
+                    }
+                    const transformedLedgerRecords = await transformRecords(
+                      tab,
+                      records,
+                      headers
+                    );
+                    dataRef.current.ledger =
+                      transformedLedgerRecords as LedgerData[];
+                    break;
+                  case "work_center_schedules":
+                    if (records.length === 0) {
+                      await seedDefaults("WorkCenterSchedules");
+                    }
+                    const transformedRecords = await transformRecords(
+                      tab,
+                      records,
+                      headers
+                    );
+                    dataRef.current.workCenterSchedules =
+                      transformedRecords as WorkCenterScheduleData[];
+                    setWorkCenterSchedulesPopulated(true);
+                    break;
+                }
+                setState(dataRef.current);
+                setUpdatedAt(Date.now());
+              }
+            } catch (error) {
+              console.error("Error fetching Google Sheet data:", error);
+  
+              // Create the missing Google Sheet with headers
+              const defaultTable = Object.values(defaultTables).find(
+                (table) => table.sheetName === tab.googleSheetName
+              );
+              if (defaultTable) {
+                console.log(
+                  `Creating missing sheet: ${defaultTable.sheetName}`
+                );
+                await createGoogleSheetWithHeaders(
+                  credentialsPath,
+                  sheetIdentifier,
+                  defaultTable.sheetName,
+                  defaultTable.headers
+                );
+  
+                // Retry fetching the data
+                const googleSheetData = await fetchGoogleSheetsData(
+                  credentialsPath,
+                  sheetIdentifier,
+                  tab
+                );
+                if (googleSheetData) {
+                  const headers = googleSheetData[0];
+                  const records = googleSheetData.slice(1);
                   const transformedRecords = await transformRecords(
                     tab,
                     records,
                     headers
                   );
-                  dataRef.current.workCenterSchedules =
-                    transformedRecords as WorkCenterScheduleData[];
-
-                  setWorkCenterSchedulesPopulated(true);
-                  break;
+                  switch (tab.id) {
+                    case "products":
+                      dataRef.current.products =
+                        transformedRecords as ProductData[];
+                      setProductsPopulated(true);
+                      break;
+                    case "ledger":
+                      dataRef.current.ledger =
+                        transformedRecords as LedgerData[];
+                      break;
+                    case "work_center_schedules":
+                      dataRef.current.workCenterSchedules =
+                        transformedRecords as WorkCenterScheduleData[];
+                      setWorkCenterSchedulesPopulated(true);
+                      break;
+                  }
+                  setState(dataRef.current);
+                  setUpdatedAt(Date.now());
+                }
+              } else {
+                console.error(`Default table not found for tab: ${tab.id}`);
               }
-              setState(dataRef.current);
-              setUpdatedAt(Date.now());
             }
           }
-        });
+        }
       } catch (error) {
         console.log(JSON.stringify(error), null, 2);
       } finally {
         setLoading(false);
       }
     };
-
+  
     if (
       credentialsPath !== "loading" &&
       credentialsPath !== "error" &&
@@ -594,6 +644,98 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       initialize();
     }
   }, [credentialsPath, sheetIdentifier]);
+
+  // useEffect(() => {
+  //   const initialize = async () => {
+  //     setLoading(true);
+  //     if (isInitialized.current) return;
+  //     isInitialized.current = true;
+
+  //     try {
+  //       allTabs.forEach(async (tab) => {
+  //         if (tab.googleSheetName && tab.columnDict) {
+
+  //           const googleSheetData = await fetchGoogleSheetsData(
+  //             credentialsPath,
+  //             sheetIdentifier,
+  //             tab
+  //           );
+
+  //           if (googleSheetData) {
+  //             const headers = googleSheetData[0];
+  //             const records = googleSheetData.slice(1);
+
+  //             switch (tab.id) {
+  //               case "products":
+  //                 // setProductsHeaders(headers);
+  //                 if (records.length === 0) {
+  //                   console.log("Seeding defaults for Products");
+  //                   await seedDefaults("Products");
+  //                 }
+  //                 const transformedProductRecords = await transformRecords(
+  //                   tab,
+  //                   records,
+  //                   headers
+  //                 );
+  //                 console.log("Transformed Records", transformedProductRecords);
+  //                 dataRef.current.products =
+  //                   transformedProductRecords as ProductData[];
+
+  //                 setProductsPopulated(true);
+  //                 break;
+  //               case "ledger":
+  //                 // setLedgerHeaders(headers);
+  //                 if (records.length === 0) {
+  //                   await seedDefaults("Ledger");
+  //                 }
+  //                 const transformedLedgerRecords = await transformRecords(
+  //                   tab,
+  //                   records,
+  //                   headers
+  //                 );
+  //                 dataRef.current.ledger =
+  //                   transformedLedgerRecords as LedgerData[];
+
+  //                 //setLedgerPopulated(true);
+
+  //                 break;
+  //               case "work_center_schedules":
+  //                 // setWorkCenterSchedulesHeaders(headers);
+  //                 if (records.length === 0) {
+  //                   await seedDefaults("WorkCenterSchedules");
+  //                 }
+  //                 const transformedRecords = await transformRecords(
+  //                   tab,
+  //                   records,
+  //                   headers
+  //                 );
+  //                 dataRef.current.workCenterSchedules =
+  //                   transformedRecords as WorkCenterScheduleData[];
+
+  //                 setWorkCenterSchedulesPopulated(true);
+  //                 break;
+  //             }
+  //             setState(dataRef.current);
+  //             setUpdatedAt(Date.now());
+  //           }
+  //         }
+  //       });
+  //     } catch (error) {
+  //       console.log(JSON.stringify(error), null, 2);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (
+  //     credentialsPath !== "loading" &&
+  //     credentialsPath !== "error" &&
+  //     sheetIdentifier !== "loading" &&
+  //     sheetIdentifier !== "error"
+  //   ) {
+  //     initialize();
+  //   }
+  // }, [credentialsPath, sheetIdentifier]);
 
   // Timeout logic for reloading if loading remains true
   useEffect(() => {

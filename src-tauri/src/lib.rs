@@ -1,9 +1,12 @@
 use google_sheets4::api::ClearValuesRequest;
 use google_sheets4::oauth2::{self, authenticator::Authenticator};
-use google_sheets4::{api::ValueRange, hyper, hyper_rustls, Sheets};
+use google_sheets4::{api::ValueRange, api::AddSheetRequest, api::BatchUpdateSpreadsheetRequest, api::Request,  hyper, hyper_rustls, Sheets};
 use hyper_rustls::HttpsConnector;
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
+
+
+
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -78,6 +81,66 @@ fn update_data(
         Ok("Worksheet updated successfully.".to_string())
     })
 }
+
+#[tauri::command]
+fn create_sheet_with_headers(
+    new_sheet_name: String,
+    priv_key_path: String,
+    sheet_id: String,
+    headers: Vec<String>,
+) -> Result<String, String> {
+    let rt = Runtime::new().map_err(|e| e.to_string())?;
+
+    rt.block_on(async {
+        let client = http_client();
+        let auth = auth(&priv_key_path, client.clone()).await.map_err(|e| e.to_string())?;
+        let hub = Sheets::new(client, auth);
+
+        // Step 1: Add a new sheet
+        let add_sheet_request = AddSheetRequest {
+            properties: Some(google_sheets4::api::SheetProperties {
+                title: Some(new_sheet_name.clone()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        let batch_update_request = BatchUpdateSpreadsheetRequest {
+            requests: Some(vec![Request {
+                add_sheet: Some(add_sheet_request),
+                ..Default::default()
+            }]),
+            ..Default::default()
+        };
+
+        hub.spreadsheets()
+            .batch_update(batch_update_request, &sheet_id)
+            .doit()
+            .await
+            .map_err(|e| format!("Failed to add new sheet: {}", e))?;
+
+        // Step 2: Populate headers in the new sheet
+        let header_row = vec![headers];
+        let value_range = ValueRange {
+            range: Some(format!("{}!A1:Z1", new_sheet_name)),
+            major_dimension: Some("ROWS".to_string()),
+            values: Some(header_row),
+        };
+
+        hub.spreadsheets()
+            .values_update(value_range, &sheet_id, &format!("{}!A1:Z1", new_sheet_name))
+            .value_input_option("USER_ENTERED")
+            .doit()
+            .await
+            .map_err(|e| format!("Failed to set headers: {}", e))?;
+
+        Ok("New sheet created and headers set successfully.".to_string())
+    })
+}
+
+
+
+
 
 #[tauri::command]
 fn get_values(
@@ -180,7 +243,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![get_values, update_data, test_auth])
+        .invoke_handler(tauri::generate_handler![get_values, update_data, test_auth, create_sheet_with_headers])
         .run(tauri::generate_context!())
         .expect("error while running Tauri application");
 }

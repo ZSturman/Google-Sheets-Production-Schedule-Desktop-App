@@ -528,7 +528,7 @@ const renderBaseProductColumnDict = (
           },
           value: {
             type: "datetime",
-            default: new Date(9999),
+            default: new Date(),
           },
         },
       },
@@ -579,21 +579,31 @@ const renderBaseProductColumnDict = (
             readOnly: { text: {}, styles: {} },
             editable:
               isProductsTab || isProductionScheduleTab
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Extrusion...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Extrusion...",
-                        items: extrusionOptions,
-                        label: "Select",
-                      },
-                    },
-                  }
+              ? {
+                default: {
+                  button: { label: "Extrusion...", labelIsValue: true },
+                  styles: {},
+                },
+                editing: {
+                  textInput: { placeholder: "Ext" },
+                  styles: {},
+                },
+              }
+                // ? {
+                //     default: {
+                //       button: {
+                //         labelIsValue: true,
+                //         label: "Select Extrusion...",
+                //       },
+                //     },
+                //     editing: {
+                //       dropdown: {
+                //         placeholder: "Select Extrusion...",
+                //         items: extrusionOptions,
+                //         label: "Select",
+                //       },
+                //     },
+                //   }
                 : false,
           },
           value: {
@@ -615,21 +625,31 @@ const renderBaseProductColumnDict = (
             readOnly: { text: {}, styles: {} },
             editable:
               isProductsTab || isProductionScheduleTab
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Ground...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Ground...",
-                        items: groundOptions,
-                        label: "Select",
-                      },
-                    },
-                  }
+               ? {
+                default: {
+                  button: { label: "Ground...", labelIsValue: true },
+                  styles: {},
+                },
+                editing: {
+                  textInput: { placeholder: "Ground" },
+                  styles: {},
+                },
+              }
+                // ? {
+                //     default: {
+                //       button: {
+                //         labelIsValue: true,
+                //         label: "Select Ground...",
+                //       },
+                //     },
+                //     editing: {
+                //       dropdown: {
+                //         placeholder: "Select Ground...",
+                //         items: groundOptions,
+                //         label: "Select",
+                //       },
+                //     },
+                //   }
                 : false,
           },
           value: {
@@ -651,21 +671,31 @@ const renderBaseProductColumnDict = (
             readOnly: { text: {}, styles: {} },
             editable:
               isProductsTab || isProductionScheduleTab
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Drawing...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Drawing...",
-                        items: drawingOption,
-                        label: "Select",
-                      },
-                    },
-                  }
+              ? {
+                default: {
+                  button: { label: "Drawing...", labelIsValue: true },
+                  styles: {},
+                },
+                editing: {
+                  textInput: { placeholder: "Drawing" },
+                  styles: {},
+                },
+              }
+                // ? {
+                //     default: {
+                //       button: {
+                //         labelIsValue: true,
+                //         label: "Select Drawing...",
+                //       },
+                //     },
+                //     editing: {
+                //       dropdown: {
+                //         placeholder: "Select Drawing...",
+                //         items: drawingOption,
+                //         label: "Select",
+                //       },
+                //     },
+                //   }
                 : false,
           },
           value: {
@@ -687,21 +717,31 @@ const renderBaseProductColumnDict = (
             readOnly: { text: {}, styles: {} },
             editable:
               isProductsTab || isProductionScheduleTab
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Ends...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Ends...",
-                        items: endsOptions,
-                        label: "Select",
-                      },
-                    },
-                  }
+              ? {
+                default: {
+                  button: { label: "Ends...", labelIsValue: true },
+                  styles: {},
+                },
+                editing: {
+                  textInput: { placeholder: "Ends" },
+                  styles: {},
+                },
+              }
+                // ? {
+                //     default: {
+                //       button: {
+                //         labelIsValue: true,
+                //         label: "Select Ends...",
+                //       },
+                //     },
+                //     editing: {
+                //       dropdown: {
+                //         placeholder: "Select Ends...",
+                //         items: endsOptions,
+                //         label: "Select",
+                //       },
+                //     },
+                //   }
                 : false,
           },
           value: {
