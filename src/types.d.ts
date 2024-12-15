@@ -1,5 +1,24 @@
 type LoadingState = "loading" | "error";
 
+
+type GanttDays = {
+  date: Date;
+  opening: Date;
+  closing: Date;
+}
+
+type GanttProductData = {
+  start: Date;
+  end: Date;
+  due: Date;
+  title: string;
+  description: string;
+  customer: string;
+  productionQuantity: number;
+  balanceQuantity: number;
+}
+
+
 type DataTableT =
   | ProductData[]
   | WorkCenterScheduleData[]
@@ -343,7 +362,7 @@ type DataColumnDefinition = {
   viewable?: boolean;
 };
 
-type HeaderFunctions = "checkbox" | "sort";
+type HeaderFunctions = "checkbox" | "sort" | "hidden"
 
 type CellValueStatus = {
   needsAttention: boolean;

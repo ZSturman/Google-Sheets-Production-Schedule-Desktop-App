@@ -3,11 +3,20 @@ import SettingsContainer from "./settings/SettingsContainer";
 import DataTable from "./data-table/DataTable";
 import { TableProvider } from "../context/TableProvider";
 import ErrorBoundary from "./ErrorBoundary";
-import GanttDisplay from "./GanttDisplay";
-// import CurrentProduct from "./CurrentProduct";
+import CurrentProduct from "./CurrentProduct";
 import { GanttProvider } from "../context/GanttProvider";
+import TimelineComponent from "./gantt/TimelineComponent";
+import { useCredentials } from "../context/CredentialProvider";
 
 const SelectedTab = () => {
+  const { credentialsPath, sheetIdentifier } = useCredentials();
+
+  if (!credentialsPath || !sheetIdentifier) {
+    return <SettingsContainer />;
+  }
+
+
+
   const { selectedTab } = useTab();
 
   const renderSelectedTab = () => {
@@ -20,8 +29,8 @@ const SelectedTab = () => {
         <TableProvider key={selectedTab.id}>
           <GanttProvider>
             <ErrorBoundary>
-             {/* <CurrentProduct />  */}
-              <GanttDisplay />
+             <CurrentProduct /> 
+             <TimelineComponent  />
               <DataTable />
             </ErrorBoundary>
           </GanttProvider>

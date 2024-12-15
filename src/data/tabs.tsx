@@ -30,33 +30,35 @@ const renderBaseProductColumnDict = (
   const isWorkCenterTab = tab === "work_center";
 
   const baseProductColumnDict: DataColumnDict = {
-    Id: {
-      id: "id",
-      googleSheetHeader: null,
-      //toSqlConverter: String,
-      columnDef: {
-        headerFunction: "checkbox",
-        cell: {
-          view: {
-            readOnly: false,
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
+    ...(isProductsTab && {
+      Id: {
+        id: "id",
+        googleSheetHeader: null,
+        columnDef: {
+          headerFunction: isWorkCenterTab ? "hidden" : "checkbox",
+          cell: {
+            view: {
+              readOnly: false,
+              editable: {
+                default: {
+                  checkbox: {},
+                },
+                editing: {
+                  checkbox: {},
+                },
               },
             },
+            value: {
+              type: "checkbox",
+              default: false,
+            },
           },
-          value: {
-            type: "checkbox",
-            default: false,
-          },
+          enableSorting: false,
+          enableHiding: false,
         },
-        enableSorting: false,
-        enableHiding: false,
       },
-    },
+    }),
+
     Job_Number: {
       id: "job_number",
       googleSheetHeader: "Job Number",
@@ -176,6 +178,7 @@ const renderBaseProductColumnDict = (
       id: "work_center",
       googleSheetHeader: "Work Center",
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { text: {}, styles: {} },
@@ -212,8 +215,9 @@ const renderBaseProductColumnDict = (
     Quantity: {
       id: "quantity",
       googleSheetHeader: "Quantity",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -239,8 +243,9 @@ const renderBaseProductColumnDict = (
     Length: {
       id: "length",
       googleSheetHeader: "Length",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -267,8 +272,9 @@ const renderBaseProductColumnDict = (
     Production_Quantity: {
       id: "production_quantity",
       googleSheetHeader: "Production Quantity",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -294,8 +300,9 @@ const renderBaseProductColumnDict = (
     Balance_Quantity: {
       id: "balance_quantity",
       googleSheetHeader: "Balance Quantity",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -313,94 +320,13 @@ const renderBaseProductColumnDict = (
         },
       },
     },
-    // Requested_Ship_Date: {
-    //   id: "requested_ship_date",
-    //   googleSheetHeader: "Requested Ship Date",
-    //   //toSqlConverter: String,
-    //   columnDef: {
-    //     cell: {
-    //       view: {
-    //         readOnly: {
-    //           date: {
-    //             format: {
-    //               delimiter: "/",
-    //               month: "short",
-    //               day: "DD",
-    //               year: "YYYY",
-    //             },
-    //           },
-    //         },
-
-    //         editable: isProductsTab
-    //           ? {
-    //               default: {
-    //                 button: {
-    //                   labelIsValue: true,
-    //                   label: "Select Date...",
-    //                 },
-    //               },
-    //               editing: {
-    //                 popup: {
-    //                   content: {
-    //                     calendar: {},
-    //                   },
-    //                 },
-    //               },
-    //             }
-    //           : false,
-    //       },
-    //       value: {
-    //         type: "date",
-    //         default: new Date(),
-    //         nullable: false,
-    //         required: true,
-    //       },
-    //     },
-    //   },
-    // },
-    // Requested_Ship_Time: {
-    //   id: "requested_ship_time",
-    //   googleSheetHeader: "Requested Ship Time",
-    //   //toSqlConverter: String,
-    //   columnDef: {
-    //     cell: {
-    //       view: {
-    //         readOnly: {
-    //           time: {},
-    //         },
-
-    //         editable: isProductsTab
-    //           ? {
-    //               default: {
-    //                 button: {
-    //                   labelIsValue: true,
-    //                   label: "Select Time...",
-    //                 },
-    //               },
-    //               editing: {
-    //                 popup: {
-    //                   content: {
-    //                     timepicker: {},
-    //                   },
-    //                 },
-    //               },
-    //             }
-    //           : false,
-    //       },
-    //       value: {
-    //         type: "time",
-    //         default: "00:00",
-    //         nullable: false,
-    //         required: false,
-    //       },
-    //     },
-    //   },
-    // },
     Requested_Ship_Date: {
       id: "requested_ship_date",
       googleSheetHeader: "Requested Ship Date",
       columnDef: {
+        headerFunction: "sort",
         cell: {
+          
           view: {
             readOnly: {
               datetime: {
@@ -456,8 +382,9 @@ const renderBaseProductColumnDict = (
     Set_Up: {
       id: "set_up",
       googleSheetHeader: "Set Up",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -484,8 +411,9 @@ const renderBaseProductColumnDict = (
     UPH: {
       id: "uph",
       googleSheetHeader: "UPH",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -512,8 +440,9 @@ const renderBaseProductColumnDict = (
     Priority: {
       id: "priority",
       googleSheetHeader: "Priority",
-      //toSqlConverter: Number,
+
       columnDef: {
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: { number: {}, styles: {} },
@@ -547,9 +476,10 @@ const renderBaseProductColumnDict = (
     Scheduled_Start: {
       id: "scheduled_start",
       googleSheetHeader: "Scheduled Start",
-      //toSqlConverter: Date,
+
       columnDef: {
         viewable: !isProductsTab,
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: {
@@ -576,9 +506,10 @@ const renderBaseProductColumnDict = (
     Scheduled_End: {
       id: "scheduled_end",
       googleSheetHeader: "Scheduled End",
-      //toSqlConverter: Date,
+
       columnDef: {
         viewable: !isProductsTab,
+        headerFunction: "sort",
         cell: {
           view: {
             readOnly: {
@@ -605,7 +536,7 @@ const renderBaseProductColumnDict = (
     Cut: {
       id: "cut",
       googleSheetHeader: "Cut",
-      //toSqlConverter: String,
+
       columnDef: {
         cell: {
           view: {
@@ -641,7 +572,7 @@ const renderBaseProductColumnDict = (
     Extrusion: {
       id: "extrusion",
       googleSheetHeader: "Extrusion",
-      //toSqlConverter: String,
+
       columnDef: {
         cell: {
           view: {
@@ -677,7 +608,7 @@ const renderBaseProductColumnDict = (
     Ground: {
       id: "ground",
       googleSheetHeader: "Ground",
-      //toSqlConverter: String,
+
       columnDef: {
         cell: {
           view: {
@@ -713,7 +644,7 @@ const renderBaseProductColumnDict = (
     Drawing: {
       id: "drawing",
       googleSheetHeader: "Drawing",
-      //toSqlConverter: String,
+
       columnDef: {
         cell: {
           view: {
@@ -749,7 +680,7 @@ const renderBaseProductColumnDict = (
     Ends: {
       id: "ends",
       googleSheetHeader: "Ends",
-      //toSqlConverter: String,
+
       columnDef: {
         cell: {
           view: {
@@ -803,7 +734,7 @@ const generateColumnDict = (workCenters: string[]) => {
     dict[key] = {
       id: key,
       googleSheetHeader: center as GoogleSheetHeader,
-      //toSqlConverter: toTimeRange,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -833,7 +764,7 @@ export const workCenterSchedulesTab: TabOption = {
     Id: {
       id: "id",
       googleSheetHeader: null,
-      //toSqlConverter: String,
+
       columnDef: {
         headerFunction: "checkbox",
         cell: {
@@ -860,7 +791,7 @@ export const workCenterSchedulesTab: TabOption = {
     Date_Weekday_Holiday: {
       id: "date_weekday_holiday",
       googleSheetHeader: "Date / Weekday / Holiday",
-      //toSqlConverter: (value: string): string => {
+
       // Normalize and validate the value
       //   const weekdayRegex =
       //     /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i;
@@ -912,7 +843,7 @@ export const ledgersTab: TabOption = {
     Id: {
       id: "id",
       googleSheetHeader: null,
-      //toSqlConverter: String,
+
       columnDef: {
         headerFunction: "checkbox",
         cell: {
@@ -939,7 +870,7 @@ export const ledgersTab: TabOption = {
     Date: {
       id: "date",
       googleSheetHeader: "Date",
-      //toSqlConverter: Date,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -958,7 +889,7 @@ export const ledgersTab: TabOption = {
     Start: {
       id: "start",
       googleSheetHeader: "Start",
-      //toSqlConverter: toTimeRange,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -977,7 +908,7 @@ export const ledgersTab: TabOption = {
     End: {
       id: "end",
       googleSheetHeader: "End",
-      //toSqlConverter: toTimeRange,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -996,7 +927,7 @@ export const ledgersTab: TabOption = {
     Work_Center: {
       id: "work_center",
       googleSheetHeader: "Work Center",
-      //toSqlConverter: String,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -1015,7 +946,7 @@ export const ledgersTab: TabOption = {
     On: {
       id: "on",
       googleSheetHeader: "On",
-      //toSqlConverter: Number,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -1034,7 +965,7 @@ export const ledgersTab: TabOption = {
     Notes: {
       id: "notes",
       googleSheetHeader: "Notes",
-      //toSqlConverter: String,
+
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -1106,13 +1037,11 @@ export const allTabs = [
 export const sidebarTabGroups: SidebarTabGroup[] = [
   {
     groupHeader: "Main",
-    groupTabs: [
-      productsTab,
-      productionScheduleTab,
-      workCenterSchedulesTab,
-      ledgersTab,
-    ],
+    groupTabs: [productionScheduleTab, productsTab],
   },
   { groupHeader: "Work Centers", groupTabs: workCenterTabs },
-  { groupHeader: "Settings", groupTabs: [settingsTab] },
+  {
+    groupHeader: "Settings",
+    groupTabs: [settingsTab, workCenterSchedulesTab, ledgersTab],
+  },
 ];

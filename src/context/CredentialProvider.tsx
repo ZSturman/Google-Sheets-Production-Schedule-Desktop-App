@@ -24,7 +24,7 @@ type CredentialsType = {
   appDirectoryPath: string | LoadingState;
   allIdentifiers: string[];
   testOutput: string | null;
-  //db: Database | null;
+
   addCredentialsPath: () => void;
   addIdentifier: (identifier: string) => void;
   handleSelectIdentifier: (selectedIdentifier: string) => void;
@@ -37,7 +37,6 @@ const defaultCredentials: CredentialsType = {
   appDirectoryPath: "loading",
   allIdentifiers: [],
   testOutput: null,
-  //db: null,
   addCredentialsPath: () => {},
   addIdentifier: () => {},
   handleSelectIdentifier: () => {},
@@ -81,15 +80,6 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    // const initializeDatabase = async () => {
-    //   try {
-    //     const db = await setUpDb(STORE.DB_NAME);
-    //     setDb(db);
-    //   } catch {
-    //     setDb(null);
-    //   }
-    // };
-
     const initializeStore = async () => {
       try {
         await setUpStore();
@@ -102,7 +92,6 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
       try {
         await initializeAppDirectory();
         await initializeStore();
-       // await initializeDatabase();
 
         checkForCredentialsPath();
         checkForIdentifiers();
@@ -143,17 +132,6 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     setStore(store);
   };
 
-  // const setUpDb = async (dbName: string) => {
-  //   try {
-  //     // Load or create a database file
-  //     const db = await Database.load(`sqlite:${dbName}`);
-
-  //     return db;
-  //   } catch (error) {
-  //     console.error("Error initializing database:", error);
-  //     throw error;
-  //   }
-  // };
 
   const checkForCredentialsPath = async () => {
     if (appDirectoryPath === "loading") {
@@ -299,7 +277,6 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
         appDirectoryPath,
         allIdentifiers,
         testOutput,
-        //db,
         addCredentialsPath,
         addIdentifier,
         handleSelectIdentifier,

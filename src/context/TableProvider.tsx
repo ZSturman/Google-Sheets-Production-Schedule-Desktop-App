@@ -59,6 +59,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     handleDataChange,
     handleDeleteRows,
     processAllWorkCenters,
+    processSpecificWorkCenter
   } = useData();
   const { selectedTab } = useTab();
 
@@ -74,6 +75,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
           data = state.ledger;
         } else {
           if (selectedTab.isWorkCenter) {
+            
             data = state.products
               .filter((row) => row["work_center"] === selectedTab.name)
               .sort((a, b) => {
@@ -87,6 +89,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                 }
                 return 0;
               });
+              
           } else {
             data = state.products;
           }
@@ -167,17 +170,15 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     }
     return Object.values(selectedTab.columnDict).map(
       ({ googleSheetHeader, id, columnDef }) => {
-        const { headerFunction, cell, enableHiding, enableSorting } =
+        const { headerFunction, cell, enableHiding, enableSorting, viewable } =
           columnDef || {};
+
+
         const columnId = id || "unknown_column";
 
         const updateCellValue = (row: any, column: any, newValue: string) => {
           const updatedRow = { ...row.original, [column.id]: newValue };
           updateLocalData(updatedRow);
-          // setTimeout(
-          //   () => handleDataChange(selectedTab, "update", updatedRow),
-          //   500
-          // );
         };
 
         return {
@@ -221,6 +222,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
           cell: ({ row, column }) => {
             if (!cell || !cell.view) return null;
 
+
             if (headerFunction === "checkbox") {
               return (
                 <input
@@ -229,7 +231,8 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                   onChange={() => row.toggleSelected()}
                 />
               );
-            }
+            } 
+
 
             if (cell.view.editable) {
               const handleCellUpdate = (newValue: string) => {
@@ -416,10 +419,11 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     if (!table) return null;
 
     return (
-      <div>
+      <div className="flex flex-row gap-2">
         <Button onClick={processAllWorkCenters}>
           Process All Work Centers
         </Button>
+        <ViewOptions columns={table.getAllColumns()} />
       </div>
     );
   };

@@ -8,9 +8,15 @@ import {
   TableRow,
 } from "../ui/table";
 import { useTable } from "../../context/TableProvider";
+import { useData } from "../../context/DataProvider";
 
 const DataTable = () => {
+  const { loading } = useData();
   const { table, renderTableOptions } = useTable();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   if (!table) {
     return <div>Table is not loaded</div>;

@@ -3,7 +3,6 @@ use google_sheets4::oauth2::{self, authenticator::Authenticator};
 use google_sheets4::{api::ValueRange, hyper, hyper_rustls, Sheets};
 use hyper_rustls::HttpsConnector;
 use serde::{Deserialize, Serialize};
-use tauri_plugin_sql::{Migration, MigrationKind};
 use tokio::runtime::Runtime;
 
 #[derive(Serialize, Deserialize)]

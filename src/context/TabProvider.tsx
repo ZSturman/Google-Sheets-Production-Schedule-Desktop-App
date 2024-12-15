@@ -57,12 +57,10 @@ export const TabProvider = ({ children }: TabProviderProps) => {
                       <Button
                         className={
                           tab.id === selectedTab.id
-                            ? "text-black"
-                            : "text-white"
+                            ? "text-black bg-slate-300"
+                            : "text-white bg-zinc-600"
                         }
-                        variant={
-                          tab.id === selectedTab.id ? "outline" : "ghost"
-                        }
+       
                         key={tab.id}
                         value={tab.id}
                         onClick={() => handleSelectedTabs(tab)}

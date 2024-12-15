@@ -118,11 +118,11 @@ const NewProductForm = ({
       Ground: extraInfo ? (values.ground as GroundColumn) : "_",
       Drawing: extraInfo ? (values.drawing as DrawingColumn) : "_",
       Ends: extraInfo ? (values.ends as EndsColumn) : "_",
-      "Balance Quantity": 0,
+      "Balance Quantity": values.quantity,
       "Job Number": values.jobNumber,
       "Production Quantity": values.quantity,
-      "Scheduled Start": new Date(1970),
-      "Scheduled End": new Date(9999, 1, 1),
+      "Scheduled Start": new Date(),
+      "Scheduled End": new Date(),
     };
 
     setLoading(true);
@@ -310,23 +310,25 @@ const NewProductForm = ({
                 />
               </div>
               <div className="col-span-1">
-  {/** Requested Ship Date */}
-  <FormField
-    control={form.control}
-    name="requestedShipDate"
-    render={({ field }) => (
-      <FormItem>
-        <FormLabel>Requested Ship Date</FormLabel>
-        <FormControl>
-          <Input className="w-full" type="datetime-local" {...field} />
-        </FormControl>
-        <FormMessage />
-      </FormItem>
-    )}
-  />
-</div>
-
-
+                {/** Requested Ship Date */}
+                <FormField
+                  control={form.control}
+                  name="requestedShipDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Requested Ship Date</FormLabel>
+                      <FormControl>
+                        <Input
+                          className="w-full"
+                          type="datetime-local"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             {!assignWorkCenter && (

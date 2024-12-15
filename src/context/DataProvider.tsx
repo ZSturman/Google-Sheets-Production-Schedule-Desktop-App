@@ -206,6 +206,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   };
 
   const processSpecificWorkCenter = async (workCenter: WorkCenter) => {
+    console.log("PROCESSING WORK CENTER", workCenter)
     if (!productsPopulated || !workCenterSchedulesPopulated) {
       return;
     }
