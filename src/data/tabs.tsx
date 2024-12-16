@@ -801,33 +801,27 @@ export const workCenterSchedulesTab: TabOption = {
   //sqlTableName: "WorkCenterSchedules",
   //googleSheetName: "Work Center Schedules",
   columnDict: {
-    Id: {
-      id: "id",
-      googleSheetHeader: null,
+    // Id: {
+    //   id: "id",
+    //   googleSheetHeader: null,
 
-      columnDef: {
-        headerFunction: "checkbox",
-        cell: {
-          view: {
-            readOnly: false,
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
-              },
-            },
-          },
-          value: {
-            type: "checkbox",
-            default: false,
-          },
-        },
-        enableSorting: false,
-        enableHiding: false,
-      },
-    },
+    //   columnDef: {
+    //     cell: {
+    //       view: {
+    //         readOnly: {
+    //           hidden: {},
+    //         },
+    //         editable: false
+    //       },
+    //       value: {
+    //         type: "checkbox",
+    //         default: false,
+    //       },
+    //     },
+    //     enableSorting: false,
+    //     enableHiding: false,
+    //   },
+    // },
     Date_Weekday_Holiday: {
       id: "date_weekday_holiday",
       googleSheetHeader: "Date / Weekday / Holiday",
@@ -885,18 +879,12 @@ export const ledgersTab: TabOption = {
       googleSheetHeader: null,
 
       columnDef: {
-        headerFunction: "checkbox",
         cell: {
           view: {
-            readOnly: false,
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
-              },
+            readOnly: {
+              hidden: {},
             },
+            editable: false
           },
           value: {
             type: "checkbox",

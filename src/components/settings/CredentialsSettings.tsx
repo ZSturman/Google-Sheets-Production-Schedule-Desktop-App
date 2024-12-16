@@ -72,20 +72,22 @@ const CredentialsSettings = () => {
 
   return (
     <div className="flex flex-col">
-        <div>
-            TO ADD: The ability to just copy and paste the credentials into a text box
-        </div>
+      <div>
+      TO ADD: The ability to just copy and paste the credentials into a text box
+      </div>
       <div className="flex flex-row">
-        <button onClick={toggleCredentials}>
-          {viewCredentials ? "Hide Credentials" : "View Credentials"}
-        </button>
-        <button onClick={addCredentialsPath}>Replace Credentials</button>
+      <button onClick={toggleCredentials}>
+        {viewCredentials ? "Hide Credentials" : "View Credentials"}
+      </button>
+      <button onClick={addCredentialsPath}>Replace Credentials</button>
       </div>
       {viewCredentials && (
-        <div className="flex flex-col">
-          <h2>Credentials</h2>
-          <pre>{JSON.stringify(credentialsFileContents, null, 2)}</pre>
-        </div>
+      <div className="flex flex-col max-w-screen-lg">
+        <h2>Credentials</h2>
+        <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
+        {JSON.stringify(credentialsFileContents, null, 2)}
+        </pre>
+      </div>
       )}
     </div>
   );
