@@ -209,17 +209,15 @@ const isWorkCenterOpen = (
 };
 
 const getTimeToComplete = (product: ProductData): number => {
-
   const productionQuantity = parseFloat(product.production_quantity || "0");
-  const uph = parseFloat(product.uph || "0");
-  const setUpTime = parseFloat(product.set_up || "0");
+  const uph = parseFloat(product.uph || "0"); // Units per hour
+  const setUpTime = parseFloat(product.set_up || "0"); // Setup time in minutes
   const balanceQuantity = parseFloat(product.balance_quantity || "0");
 
   console.log("Production Quantity:", productionQuantity);
   console.log("UPH:", uph);
   console.log("Set-up Time:", setUpTime);
   console.log("Balance Quantity:", balanceQuantity);
-
 
   if (
     isNaN(productionQuantity) ||
@@ -233,17 +231,62 @@ const getTimeToComplete = (product: ProductData): number => {
       setUpTime,
       balanceQuantity,
     });
+    return 0; // Return 0 to avoid further errors
   }
 
+  // If balanceQuantity is zero, the product is finished
+  if (balanceQuantity === 0) {
+    console.log("Balance quantity is zero; product is finished.");
+    return 0;
+  }
+
+  // Time to complete is calculated only for the remaining balance
   const timeToComplete =
-    ((productionQuantity - balanceQuantity) / uph) * 60 * 60 * 1000 +
-    setUpTime * 60 * 1000;
+    (balanceQuantity / uph) * 60 * 60 * 1000 + // Convert hours to milliseconds
+    setUpTime * 60 * 1000; // Add setup time in milliseconds
 
-  console.log("Time to Complete:", timeToComplete);
+  console.log("Time to Complete (ms):", timeToComplete);
+  console.log("Time to complete (minutes):", timeToComplete / 1000 / 60);
 
-  console.log("Time to complete in minutes:", timeToComplete / 1000 / 60);
   return timeToComplete;
 };
+
+// const getTimeToComplete = (product: ProductData): number => {
+
+//   const productionQuantity = parseFloat(product.production_quantity || "0");
+//   const uph = parseFloat(product.uph || "0");
+//   const setUpTime = parseFloat(product.set_up || "0");
+//   const balanceQuantity = parseFloat(product.balance_quantity || "0");
+
+//   console.log("Production Quantity:", productionQuantity);
+//   console.log("UPH:", uph);
+//   console.log("Set-up Time:", setUpTime);
+//   console.log("Balance Quantity:", balanceQuantity);
+
+
+//   if (
+//     isNaN(productionQuantity) ||
+//     isNaN(uph) ||
+//     isNaN(setUpTime) ||
+//     isNaN(balanceQuantity)
+//   ) {
+//     console.error("Invalid numeric values:", {
+//       productionQuantity,
+//       uph,
+//       setUpTime,
+//       balanceQuantity,
+//     });
+//   }
+
+//   const timeToComplete =
+//     ((productionQuantity - balanceQuantity) / uph) * 60 * 60 * 1000 +
+//     setUpTime * 60 * 1000;
+
+//   console.log("Time to Complete:", timeToComplete);
+
+//   console.log("Time to complete in minutes:", timeToComplete / 1000 / 60);
+//   return timeToComplete;
+// };
 
 const getTimeTileWorkCenterCloses = (
   workCenter: string,

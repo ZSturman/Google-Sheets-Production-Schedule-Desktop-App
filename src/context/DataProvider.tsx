@@ -645,106 +645,14 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     }
   }, [credentialsPath, sheetIdentifier]);
 
-  // useEffect(() => {
-  //   const initialize = async () => {
-  //     setLoading(true);
-  //     if (isInitialized.current) return;
-  //     isInitialized.current = true;
 
-  //     try {
-  //       allTabs.forEach(async (tab) => {
-  //         if (tab.googleSheetName && tab.columnDict) {
-
-  //           const googleSheetData = await fetchGoogleSheetsData(
-  //             credentialsPath,
-  //             sheetIdentifier,
-  //             tab
-  //           );
-
-  //           if (googleSheetData) {
-  //             const headers = googleSheetData[0];
-  //             const records = googleSheetData.slice(1);
-
-  //             switch (tab.id) {
-  //               case "products":
-  //                 // setProductsHeaders(headers);
-  //                 if (records.length === 0) {
-  //                   console.log("Seeding defaults for Products");
-  //                   await seedDefaults("Products");
-  //                 }
-  //                 const transformedProductRecords = await transformRecords(
-  //                   tab,
-  //                   records,
-  //                   headers
-  //                 );
-  //                 console.log("Transformed Records", transformedProductRecords);
-  //                 dataRef.current.products =
-  //                   transformedProductRecords as ProductData[];
-
-  //                 setProductsPopulated(true);
-  //                 break;
-  //               case "ledger":
-  //                 // setLedgerHeaders(headers);
-  //                 if (records.length === 0) {
-  //                   await seedDefaults("Ledger");
-  //                 }
-  //                 const transformedLedgerRecords = await transformRecords(
-  //                   tab,
-  //                   records,
-  //                   headers
-  //                 );
-  //                 dataRef.current.ledger =
-  //                   transformedLedgerRecords as LedgerData[];
-
-  //                 //setLedgerPopulated(true);
-
-  //                 break;
-  //               case "work_center_schedules":
-  //                 // setWorkCenterSchedulesHeaders(headers);
-  //                 if (records.length === 0) {
-  //                   await seedDefaults("WorkCenterSchedules");
-  //                 }
-  //                 const transformedRecords = await transformRecords(
-  //                   tab,
-  //                   records,
-  //                   headers
-  //                 );
-  //                 dataRef.current.workCenterSchedules =
-  //                   transformedRecords as WorkCenterScheduleData[];
-
-  //                 setWorkCenterSchedulesPopulated(true);
-  //                 break;
-  //             }
-  //             setState(dataRef.current);
-  //             setUpdatedAt(Date.now());
-  //           }
-  //         }
-  //       });
-  //     } catch (error) {
-  //       console.log(JSON.stringify(error), null, 2);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   if (
-  //     credentialsPath !== "loading" &&
-  //     credentialsPath !== "error" &&
-  //     sheetIdentifier !== "loading" &&
-  //     sheetIdentifier !== "error"
-  //   ) {
-  //     initialize();
-  //   }
-  // }, [credentialsPath, sheetIdentifier]);
-
-  // Timeout logic for reloading if loading remains true
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
         console.log("Loading timeout reached, reloading...");
         window.location.reload(); // Optionally reload the page
       }
-    }, 3000); // 3 seconds timeout
+    }, 3000); 
 
     return () => clearTimeout(timeout); // Cleanup on component unmount or loading state change
   }, [loading]);

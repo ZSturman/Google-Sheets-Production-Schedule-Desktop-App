@@ -11,12 +11,12 @@ import {
   readTextFile,
   writeTextFile,
   mkdir,
+  remove 
 } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
-import { appDataDir, join } from "@tauri-apps/api/path";
 import { withTimeout } from "../lib/withTimeout";
 import { invoke } from "@tauri-apps/api/core";
-//import Database from "@tauri-apps/plugin-sql";
+import { join, appDataDir } from '@tauri-apps/api/path';
 
 type CredentialsType = {
   credentialsPath: string | LoadingState;
@@ -28,6 +28,7 @@ type CredentialsType = {
   addCredentialsPath: () => void;
   addIdentifier: (identifier: string) => void;
   handleSelectIdentifier: (selectedIdentifier: string) => void;
+  deleteCredentials: () => void;
 };
 
 // Default values for context
@@ -40,6 +41,7 @@ const defaultCredentials: CredentialsType = {
   addCredentialsPath: () => {},
   addIdentifier: () => {},
   handleSelectIdentifier: () => {},
+  deleteCredentials: () => {},
 };
 
 // Create Context
@@ -131,6 +133,37 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     const store = await load(STORE.STORE_NAME);
     setStore(store);
   };
+
+
+
+const deleteCredentials = async () => {
+  if (!appDirectoryPath || appDirectoryPath === 'loading') return;
+
+  try {
+    const credentialsFilePath = await join(appDirectoryPath, CREDENTIALS_FILENAME);
+
+    const result = await exists(credentialsFilePath)
+  
+    if (!result) {
+      setCredentialsPath("error");
+      //console.error("Timeout: Failed to check credentials path");
+      return;
+    }
+
+    if (result) {
+      await remove(credentialsFilePath);
+    }
+
+    // Reset related state values
+    setCredentialsPath('error');
+    setTestOutput(null);
+    setIdentifiers([]);
+
+    console.log('Credentials deleted successfully.');
+  } catch (error) {
+    console.error('Failed to delete credentials:', error);
+  }
+};
 
 
   const checkForCredentialsPath = async () => {
@@ -280,6 +313,7 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
         addCredentialsPath,
         addIdentifier,
         handleSelectIdentifier,
+        deleteCredentials,
       }}
     >
       <div>{children}</div>

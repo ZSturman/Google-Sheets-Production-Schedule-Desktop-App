@@ -3,7 +3,7 @@ import { useCredentials } from "../../context/CredentialProvider";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 
 const CredentialsSettings = () => {
-  const { credentialsPath, addCredentialsPath } =
+  const { credentialsPath, addCredentialsPath, deleteCredentials } =
     useCredentials();
 
   const [credentialsFileContents, setCredentialsFileContents] = useState<
@@ -65,6 +65,7 @@ const CredentialsSettings = () => {
         <p>
           The file is empty or invalid. Please upload a valid credentials file.
         </p>
+        <button onClick={deleteCredentials}>Delete Credentials</button>
         <button onClick={addCredentialsPath}>Select Credentials File</button>
       </div>
     );
@@ -72,13 +73,11 @@ const CredentialsSettings = () => {
 
   return (
     <div className="flex flex-col">
-      <div>
-      TO ADD: The ability to just copy and paste the credentials into a text box
-      </div>
       <div className="flex flex-row">
       <button onClick={toggleCredentials}>
         {viewCredentials ? "Hide Credentials" : "View Credentials"}
       </button>
+      <button onClick={deleteCredentials}>Delete Credentials</button>
       <button onClick={addCredentialsPath}>Replace Credentials</button>
       </div>
       {viewCredentials && (
