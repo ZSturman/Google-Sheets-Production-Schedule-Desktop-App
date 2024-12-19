@@ -29,6 +29,10 @@ type CredentialsType = {
   addIdentifier: (identifier: string) => void;
   handleSelectIdentifier: (selectedIdentifier: string) => void;
   deleteCredentials: () => void;
+  
+  ensureCredentialsFileExists: () => Promise<string>;
+
+  refresh: () => void;
 };
 
 // Default values for context
@@ -42,6 +46,9 @@ const defaultCredentials: CredentialsType = {
   addIdentifier: () => {},
   handleSelectIdentifier: () => {},
   deleteCredentials: () => {},
+  
+  ensureCredentialsFileExists: async () => "",
+  refresh: () => {},
 };
 
 // Create Context
@@ -116,6 +123,16 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
       checkForIdentifiers();
     }
   }, [store]);
+
+  const refresh = async () => {
+    try {
+      await setUpStore();
+      checkForCredentialsPath();
+      checkForIdentifiers();
+    } catch (e) {
+      console.error("Error during refresh:", e);
+    }
+  }
 
   const setupAppDirectory = async () => {
     const appDataDirPath = await appDataDir();
@@ -234,6 +251,31 @@ const deleteCredentials = async () => {
     setSheetIdentifier(lastUsedIdentifier);
   };
 
+  const ensureCredentialsFileExists = async (): Promise<string> => {
+    if (appDirectoryPath === "loading" || appDirectoryPath === "error") {
+      const appDataDirPath = await appDataDir();
+      const appDataDirExists = await exists(appDataDirPath);
+  
+      if (!appDataDirExists) {
+        await mkdir(appDataDirPath, { recursive: true });
+      }
+  
+      setAppDirectoryPath(appDataDirPath);
+    }
+  
+    const credentialsFilePath = await join(
+      appDirectoryPath as string,
+      CREDENTIALS_FILENAME
+    );
+  
+    const fileExists = await exists(credentialsFilePath);
+    if (!fileExists) {
+      await writeTextFile(credentialsFilePath, "{}"); // Create an empty JSON file
+    }
+  
+    return credentialsFilePath;
+  };
+
   const addCredentialsPath = async () => {
     const file = await open({
       multiple: false,
@@ -241,19 +283,19 @@ const deleteCredentials = async () => {
       types: [{ extensions: ["json"] }],
     });
 
-    if (!appDirectoryPath) return;
+    if (!appDirectoryPath || typeof appDirectoryPath !== "string") {
+      throw new Error("App directory not initialized.");
+    }
 
-    const credentialsFilePath = await join(
-      appDirectoryPath,
-      CREDENTIALS_FILENAME
-    );
+    const credentialsFilePath = await ensureCredentialsFileExists();
+
     if (file) {
       const fileData = await readTextFile(file);
-      await deleteCredentials();
-      await writeTextFile(credentialsFilePath, fileData);
+      await writeTextFile(credentialsFilePath, fileData); // Overwrite with selected file contents
       setCredentialsPath(credentialsFilePath);
     }
   };
+
 
   const addIdentifier = async (identifier: string) => {
     if (!store) return;
@@ -303,6 +345,7 @@ const deleteCredentials = async () => {
     }
     testAuth();
   }, [credentialsPath, sheetIdentifier]);
+  
 
   return (
     <Credentials.Provider
@@ -316,6 +359,8 @@ const deleteCredentials = async () => {
         addIdentifier,
         handleSelectIdentifier,
         deleteCredentials,
+        ensureCredentialsFileExists,
+        refresh
       }}
     >
       <div>{children}</div>

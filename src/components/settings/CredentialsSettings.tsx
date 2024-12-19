@@ -1,112 +1,13 @@
-// import { useEffect, useState } from "react";
-// import { useCredentials } from "../../context/CredentialProvider";
-// import { readTextFile } from "@tauri-apps/plugin-fs";
-
-// const CredentialsSettings = () => {
-//   const { credentialsPath, addCredentialsPath, deleteCredentials } =
-//     useCredentials();
-
-//   const [credentialsFileContents, setCredentialsFileContents] = useState<
-//     any | null
-//   >(null);
-//   const [viewCredentials, setViewCredentials] = useState<boolean>(false);
-
-//   useEffect(() => {
-//     const loadContents = async () => {
-//       const contents = await contentsOfCredentialsPathFile();
-//       setCredentialsFileContents(contents);
-//     };
-//     loadContents();
-//   }, [credentialsPath]);
-
-//   const toggleCredentials = () => {
-//     setViewCredentials(!viewCredentials);
-//   };
-
-//   const contentsOfCredentialsPathFile = async (): Promise<any | null> => {
-//     if (credentialsPath === "loading" || credentialsPath === "error") {
-//       return null;
-//     }
-
-//     try {
-//       const fileContents = await readTextFile(credentialsPath);
-//       const parsedContents = JSON.parse(fileContents);
-
-//       if (
-//         typeof parsedContents === "object" &&
-//         Object.keys(parsedContents).length === 0
-//       ) {
-//         return null;
-//       }
-
-//       return parsedContents;
-//     } catch (error) {
-//       return null;
-//     }
-//   };
-
-//   if (credentialsPath === "loading") {
-//     return <p>Loading credentials path...</p>;
-//   }
-
-//   if (credentialsPath === "error") {
-//     return (
-//       <div>
-//         <p>Error loading credentials file.</p>
-//         <button onClick={addCredentialsPath}>Select Credentials File</button>
-//       </div>
-//     );
-//   }
-
-//   if (!credentialsFileContents) {
-//     return (
-//       <div>
-//         <p>Credentials file loaded: {credentialsPath}</p>
-//         <p>
-//           The file is empty or invalid. Please upload a valid credentials file.
-//         </p>
-//         <button onClick={deleteCredentials}>Delete Credentials</button>
-//         <button onClick={addCredentialsPath}>Select Credentials File</button>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="flex flex-col">
-//       <div className="flex flex-row">
-//       <button onClick={toggleCredentials}>
-//         {viewCredentials ? "Hide Credentials" : "View Credentials"}
-//       </button>
-//       <button onClick={deleteCredentials}>Delete Credentials</button>
-//       <button onClick={addCredentialsPath}>Replace Credentials</button>
-//       </div>
-//       {viewCredentials && (
-//       <div className="flex flex-col max-w-screen-lg">
-//         <h2>Credentials</h2>
-//         <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
-//         {JSON.stringify(credentialsFileContents, null, 2)}
-//         </pre>
-//       </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default CredentialsSettings;
-
 
 import { useEffect, useState } from "react";
 import { useCredentials } from "../../context/CredentialProvider";
 import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
 
 const CredentialsSettings = () => {
-  const { credentialsPath, addCredentialsPath, deleteCredentials } =
+  const { credentialsPath, addCredentialsPath, deleteCredentials, ensureCredentialsFileExists, refresh } =
     useCredentials();
 
-  const [credentialsFileContents, setCredentialsFileContents] = useState<
-    any | null
-  >(null);
-  const [viewCredentials, setViewCredentials] = useState<boolean>(false);
+  const [credentialsFileContents, setCredentialsFileContents] = useState<any | null>(null);
   const [jsonInput, setJsonInput] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
@@ -118,15 +19,13 @@ const CredentialsSettings = () => {
     loadContents();
   }, [credentialsPath]);
 
-  const toggleCredentials = () => {
-    setViewCredentials(!viewCredentials);
-  };
+
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
-    if (credentialsFileContents) {
-      setJsonInput(JSON.stringify(credentialsFileContents, null, 2));
-    }
+    setJsonInput(
+      credentialsFileContents ? JSON.stringify(credentialsFileContents, null, 2) : ""
+    );
   };
 
   const saveJsonInput = async () => {
@@ -136,23 +35,21 @@ const CredentialsSettings = () => {
     }
   
     try {
-      // Clean and parse the input
       const sanitizedInput = jsonInput.trim();
       const parsedInput = JSON.parse(sanitizedInput); // Validate JSON structure
-  
       const jsonString = JSON.stringify(parsedInput, null, 2); // Re-format the JSON string
   
-      if (credentialsPath !== "loading" && credentialsPath !== "error") {
-        await writeTextFile(credentialsPath, jsonString); // Write JSON to the file
-        setCredentialsFileContents(parsedInput); // Update state with new contents
-        setJsonInput(jsonString); // Update the textarea with formatted JSON
-        setIsEditing(false);
-        alert("Credentials saved successfully!");
-      } else {
-        alert("Invalid credentials path.");
-      }
+      // Ensure the path and file exist dynamically
+      const finalPath = await ensureCredentialsFileExists();
+  
+      await writeTextFile(finalPath, jsonString);
+      setCredentialsFileContents(parsedInput); // Update state with new contents
+      setJsonInput(jsonString); // Update the textarea with formatted JSON
+      setIsEditing(false);
+  
+      alert("Credentials saved successfully!");
     } catch (error) {
-      console.error("Error parsing JSON input:", error);
+      console.error("Error parsing or saving JSON input:", error);
       alert("Invalid JSON format. Please correct it.");
     }
   };
@@ -166,10 +63,7 @@ const CredentialsSettings = () => {
       const fileContents = await readTextFile(credentialsPath);
       const parsedContents = JSON.parse(fileContents);
 
-      if (
-        typeof parsedContents === "object" &&
-        Object.keys(parsedContents).length === 0
-      ) {
+      if (typeof parsedContents === "object" && Object.keys(parsedContents).length === 0) {
         return null;
       }
 
@@ -180,42 +74,14 @@ const CredentialsSettings = () => {
     }
   };
 
-  if (credentialsPath === "loading") {
-    return <p>Loading credentials path...</p>;
-  }
-
-  if (credentialsPath === "error") {
-    return (
-      <div>
-        <p>Error loading credentials file.</p>
-        <button onClick={addCredentialsPath}>Select Credentials File</button>
-      </div>
-    );
-  }
-
-  if (!credentialsFileContents) {
-    return (
-      <div>
-        <p>Credentials file loaded: {credentialsPath}</p>
-        <p>
-          The file is empty or invalid. Please upload a valid credentials file.
-        </p>
-        <button onClick={deleteCredentials}>Delete Credentials</button>
-        <button onClick={addCredentialsPath}>Select Credentials File</button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col">
       <div className="flex flex-row">
-        <button onClick={toggleCredentials}>
-          {viewCredentials ? "Hide Credentials" : "View Credentials"}
-        </button>
+        <button onClick={refresh}>Refresh</button>
         <button onClick={deleteCredentials}>Delete Credentials</button>
         <button onClick={addCredentialsPath}>Replace Credentials</button>
         <button onClick={handleEditToggle}>
-          {isEditing ? "Cancel Editing" : "Edit JSON"}
+          {isEditing ? "Cancel Editing" : "Edit/Add JSON"}
         </button>
       </div>
 
@@ -226,6 +92,7 @@ const CredentialsSettings = () => {
             onChange={(e) => setJsonInput(e.target.value)}
             rows={10}
             className="w-full p-2 border"
+            placeholder="Paste your JSON here..."
           />
           <button onClick={saveJsonInput} className="mt-2 p-2 border bg-blue-500 text-white">
             Save JSON
@@ -233,12 +100,18 @@ const CredentialsSettings = () => {
         </div>
       )}
 
-      {viewCredentials && !isEditing && (
+      {!isEditing && credentialsFileContents && (
         <div className="flex flex-col max-w-screen-lg mt-4">
           <h2>Credentials</h2>
           <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
             {JSON.stringify(credentialsFileContents, null, 2)}
           </pre>
+        </div>
+      )}
+
+      { !credentialsFileContents && (
+        <div className="mt-4">
+          <p>No valid credentials found. Use the text area to paste or create JSON data.</p>
         </div>
       )}
     </div>
