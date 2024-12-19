@@ -55,6 +55,7 @@ type DataContextType = {
   ) => Promise<void>;
   processAllWorkCenters: () => Promise<void>;
   processSpecificWorkCenter: (workCenter: WorkCenter) => Promise<void>;
+  refreshData: () => Promise<void>;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -419,18 +420,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     );
   };
 
-  const contextValue = useMemo(
-    () => ({
-      state,
-      handleDataChange,
-      handleDeleteRows,
-      loading,
-      updatedAt,
-      processAllWorkCenters,
-      processSpecificWorkCenter,
-    }),
-    [state, loading, updatedAt] // Memoize with `updatedAt`
-  );
+
 
   const seedDefaults = async (
     tableDefaults: "Products" | "WorkCenterSchedules" | "Ledger"
@@ -644,6 +634,75 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       initialize();
     }
   }, [credentialsPath, sheetIdentifier]);
+
+  const refreshData = async () => {
+    console.log("Refreshing data...");
+    setLoading(true);
+    try {
+      for (const tab of allTabs) {
+        if (tab.googleSheetName && tab.columnDict) {
+          const googleSheetData = await fetchGoogleSheetsData(
+            credentialsPath,
+            sheetIdentifier,
+            tab
+          );
+  
+          if (googleSheetData) {
+            const headers = googleSheetData[0];
+            const records = googleSheetData.slice(1);
+  
+            switch (tab.id) {
+              case "products":
+                const transformedProductRecords = await transformRecords(
+                  tab,
+                  records,
+                  headers
+                );
+                dataRef.current.products =
+                  transformedProductRecords as ProductData[];
+                setProductsPopulated(true);
+                break;
+              case "ledger":
+                const transformedLedgerRecords = await transformRecords(
+                  tab,
+                  records,
+                  headers
+                );
+                dataRef.current.ledger = transformedLedgerRecords as LedgerData[];
+                break;
+              case "work_center_schedules":
+                const transformedWorkCenterSchedulesRecords =
+                  await transformRecords(tab, records, headers);
+                dataRef.current.workCenterSchedules =
+                  transformedWorkCenterSchedulesRecords as WorkCenterScheduleData[];
+                setWorkCenterSchedulesPopulated(true);
+                break;
+            }
+            setState(dataRef.current);
+            setUpdatedAt(Date.now());
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const contextValue = useMemo(
+    () => ({
+      state,
+      handleDataChange,
+      handleDeleteRows,
+      loading,
+      updatedAt,
+      processAllWorkCenters,
+      processSpecificWorkCenter,
+      refreshData
+    }),
+    [state, loading, updatedAt]
+  );
 
 
   useEffect(() => {

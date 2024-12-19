@@ -178,7 +178,7 @@ const deleteCredentials = async () => {
 
     const result = await withTimeout(
       exists(credentialsFilePath),
-      5000 // 5 seconds timeout
+      5000 
     );
 
     if (result === "timeout") {
@@ -186,6 +186,7 @@ const deleteCredentials = async () => {
       console.error("Timeout: Failed to check credentials path");
       return;
     }
+    
 
     if (result) {
       setCredentialsPath(credentialsFilePath);
@@ -248,6 +249,7 @@ const deleteCredentials = async () => {
     );
     if (file) {
       const fileData = await readTextFile(file);
+      await deleteCredentials();
       await writeTextFile(credentialsFilePath, fileData);
       setCredentialsPath(credentialsFilePath);
     }

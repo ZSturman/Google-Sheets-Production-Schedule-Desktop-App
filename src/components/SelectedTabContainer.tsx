@@ -7,6 +7,7 @@ import CurrentProduct from "./CurrentProduct";
 import { GanttProvider } from "../context/GanttProvider";
 import TimelineComponent from "./gantt/TimelineComponent";
 import { useCredentials } from "../context/CredentialProvider";
+import RefreshButton from "./RefreshButton";
 
 const SelectedTab = () => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
@@ -65,6 +66,7 @@ const SelectedTab = () => {
   return (
     <div className="flex flex-col w-[95vw]  gap-4 py-4 ">
       <div className="text-5xl">{selectedTab.name}</div>
+      <RefreshButton />
 
       {renderSelectedTab()}
     </div>

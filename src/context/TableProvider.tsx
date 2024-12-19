@@ -483,6 +483,10 @@ export const TableProvider = ({ children }: TableProviderProps) => {
 
           <ViewOptions columns={table.getAllColumns()} />
         </div>
+        <div>
+          Note: When adding a new product, there may be a delay before the data is populated correctly. 
+          <br />If this happens, please press the 'Refresh' button to get the updated data from Google Sheets. 
+        </div>
       </div>
     );
   };
