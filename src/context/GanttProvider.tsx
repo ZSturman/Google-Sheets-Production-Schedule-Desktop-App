@@ -12,9 +12,13 @@ import { useTab } from "./TabProvider";
 
 import { defaultOnOffTime } from "../data/defaults";
 
+type ViewMode = "day" | "week" | "month";
+
 type GanttContextType = {
   ganttDays: GanttDays[];
   ganttProducts: GanttProductData[];
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 };
 
 const GanttContext = createContext<GanttContextType | undefined>(undefined);
@@ -29,6 +33,7 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
 
   const [ganttDays, setGanttDays] = useState<GanttDays[]>([]);
   const [ganttProducts, setGanttProducts] = useState<GanttProductData[]>([]);
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
 
   const getWorkCenterHours = (
     workCenter: string,
@@ -130,7 +135,6 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
               title: row["job_number"],
               description: row["text"],
               customer: row["customer"],
-              productionQuantity: parseInt(row["production_quantity"]),
               balanceQuantity: parseInt(row["balance_quantity"]),
             }));
 
@@ -192,7 +196,6 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
               title: row["job_number"],
               description: row["text"],
               customer: row["customer"],
-              productionQuantity: parseInt(row["production_quantity"]),
               balanceQuantity: parseInt(row["balance_quantity"]),
             }));
 
@@ -210,6 +213,8 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
       value={{
         ganttDays,
         ganttProducts,
+        viewMode,
+        setViewMode,
       }}
     >
       {children}

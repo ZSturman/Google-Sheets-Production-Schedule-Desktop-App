@@ -40,7 +40,7 @@ const DataTable = () => {
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="border border-gray-300 px-4 py-2 text-center"
+                    className="border border-gray-300 text-center truncate text-xs"
                   >
                     {header.isPlaceholder
                       ? null
@@ -65,7 +65,7 @@ const DataTable = () => {
                 {row.getVisibleCells().map((cell: any) => (
                   <TableCell
                     key={cell.id}
-                    className="border border-gray-300 px-4 py-2 text-center"
+                    className="border border-gray-300  text-center  text-xs"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>

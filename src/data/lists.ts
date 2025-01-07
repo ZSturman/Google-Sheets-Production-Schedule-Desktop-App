@@ -107,48 +107,12 @@ export const workCenterIdMapping: Record<WorkCenterId, typeof workCentersList[nu
 };
 
 
-export const cutOptions: CutColumn[] = [
-  "_",
-  "Cut",
-  "Extrusion",
-  "Ground",
-  "Drawing",
-  "Ends",
-  "None",
-]
 
-export const extrusionOptions:ExtrusionColumn[] = [
-  "_",
-  "Ext 1",
-  "Ext 2",
-  "Ext 3",
-  "Ext 4",
-  "Ext 5",
-]
-
-export const groundOptions: GroundColumn[] = [
-  "_",
-  "Grind 1",
-  "Grind 2",
-  "Grind 3",
-  "Grind 4",
-  "Grind 5",
-]
-
-export const drawingOption: DrawingColumn[] = [
-  "_",
-  "Draw 1",
-  "Draw 2",
-  "Draw 3",
-  "Draw 4",
-  "Draw 5",
-]
 
 export const endsOptions: EndsColumn[] = [
   "_",
-  "End 1",
-  "End 2",
-  "End 3",
-  "End 4",
-  "End 5",
+  "Open",
+  "End",
+  "Lace",
+  "Long"
 ]

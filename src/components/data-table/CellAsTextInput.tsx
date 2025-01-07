@@ -1,18 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 type CellAsTextInputProps = {
-    value: string;
-    onSave: (newValue: string) => void;
-    className?: string;
-  };
-  
+  value: string;
+  onSave: (newValue: string) => void;
+  className?: string;
+};
+
 const CellAsTextInput: React.FC<CellAsTextInputProps> = ({ value, onSave }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentValue, setCurrentValue] = useState<string>(value);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Handle input change
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setCurrentValue(event.target.value);
   };
 
@@ -27,7 +30,10 @@ const CellAsTextInput: React.FC<CellAsTextInputProps> = ({ value, onSave }) => {
   // Exit editing when clicking outside or pressing Enter
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
         handleSave();
       }
     };
@@ -60,16 +66,21 @@ const CellAsTextInput: React.FC<CellAsTextInputProps> = ({ value, onSave }) => {
   }, [isEditing]);
 
   return (
-    <div>
+    <div className="flex items-center justify-center">
       {isEditing ? (
-        <input
+        <textarea
           ref={inputRef}
-          type="text"
           value={currentValue}
           onChange={handleInputChange}
+          className="text-center p-0 text-xs border-[1px] border-black rounded-md" 
         />
       ) : (
-        <button onClick={() => setIsEditing(true)}>{value || "Click to edit"}</button>
+        <Button
+          className="bg-transparent hover:bg-transparent text-black hover:text-black p-1  text-xs border-[1px] border-black shadown-none min-w-5 text-wrap line-clamp-2"
+          onClick={() => setIsEditing(true)}
+        >
+          {value || "Click to edit"}
+        </Button>
       )}
     </div>
   );

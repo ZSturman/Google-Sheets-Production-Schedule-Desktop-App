@@ -8,15 +8,19 @@ import { GanttProvider } from "../context/GanttProvider";
 import TimelineComponent from "./gantt/TimelineComponent";
 import { useCredentials } from "../context/CredentialProvider";
 import RefreshButton from "./RefreshButton";
+import { ChartBar } from "./gantt/ChartTest";
 
 const SelectedTab = () => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
 
-  if (!credentialsPath || !sheetIdentifier || sheetIdentifier === "error" || credentialsPath === "error") {
+  if (
+    !credentialsPath ||
+    !sheetIdentifier ||
+    sheetIdentifier === "error" ||
+    credentialsPath === "error"
+  ) {
     return <SettingsContainer />;
   }
-
-
 
   const { selectedTab } = useTab();
 
@@ -30,8 +34,9 @@ const SelectedTab = () => {
         <TableProvider key={selectedTab.id}>
           <GanttProvider>
             <ErrorBoundary>
-             <CurrentProduct /> 
-             <TimelineComponent  />
+              <CurrentProduct />
+              <ChartBar />
+              <TimelineComponent />
               <DataTable />
             </ErrorBoundary>
           </GanttProvider>
@@ -42,16 +47,11 @@ const SelectedTab = () => {
     if (selectedTab.id === "production_schedule") {
       return (
         <TableProvider key={selectedTab.id}>
-          <GanttProvider>
-            <ErrorBoundary>
-         
-             <TimelineComponent  />
-              <DataTable />
-            </ErrorBoundary>
-          </GanttProvider>
+          <ErrorBoundary>
+            <DataTable />
+          </ErrorBoundary>
         </TableProvider>
       );
-
     }
 
     return (

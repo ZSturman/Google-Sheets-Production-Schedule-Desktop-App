@@ -86,10 +86,9 @@ const CurrentTimeIndicator = ({ date }: { date: Date }) => {
   const totalMinutes = differenceInMinutes(now, startOfDay(date));
   const percentage = (totalMinutes / 1440) * 100; // 1440 = minutes in a day
 
-
   return (
     <div
-      className="absolute top-0 bottom-0 w-1 bg-red-500 z-10"
+      className="absolute top-0 bottom-0 w-1 bg-black z-10"
       style={{ left: `${percentage}%` }}
     />
   );
@@ -100,8 +99,8 @@ export default function DayTimeline({ date, items }: DayTimelineProps) {
 
   return (
     <div className="relative bg-gray-100 rounded-lg overflow-hidden">
-       <TimeGrid />
-     <WorkHours date={date} />
+      <TimeGrid />
+      <WorkHours date={date} />
       <CurrentTimeIndicator date={date} />
 
       {/* Debugging Timeline items */}
@@ -135,7 +134,9 @@ const TimelineItem = ({
     <div className="relative h-full">
       {/* Combined bar from start to end */}
       <div
-        className="absolute top-0 bottom-0 bg-blue-500 z-10 opacity-50"
+        className={`absolute top-0 bottom-0 ${
+          item.end > item.due ? "bg-red-500" : "bg-blue-500"
+        } z-10 opacity-50`}
         style={{
           left: `${startPercentage}%`,
           width: `${endPercentage - startPercentage}%`,

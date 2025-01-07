@@ -42,7 +42,6 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
     }
   }, [value]);
 
-
   const handleDateChange = (newDate: Date | undefined) => {
     if (newDate && !isNaN(newDate.getTime())) {
       setDate(newDate);
@@ -72,18 +71,16 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
     }
   };
 
-
   return (
     <Popover onOpenChange={(open) => !open && handleSave()}>
       <PopoverTrigger asChild>
-      <Button >
-  <CalendarIcon className="mr-2 h-4 w-4" />
-  {date && !isNaN(date.getTime()) ? (
-    format(date, "PPP HH:mm")
-  ) : (
-    <span className="text-red-500">Invalid date</span>
-  )}
-</Button>
+        <Button className="bg-transparent hover:bg-transparent border-[1px] border-black text-black hover:text-black">
+          {date && !isNaN(date.getTime()) ? (
+            format(date, "MMM d p")
+          ) : (
+            <span className="text-red-500">Invalid date</span>
+          )}
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
@@ -93,7 +90,10 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
           initialFocus
         />
         <div className="p-3 border-t">
-          <TimePickerDemo setTime={handleTimeChange} date={date || new Date()} />
+          <TimePickerDemo
+            setTime={handleTimeChange}
+            date={date || new Date()}
+          />
         </div>
       </PopoverContent>
     </Popover>
@@ -103,7 +103,7 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
 export default CellAsPopupDateTimePicker;
 
 interface TimePickerDemoProps {
-  date: Date
+  date: Date;
   setTime: (date: Date) => void;
 }
 

@@ -1,11 +1,7 @@
 //import { timeRangeToString, toTimeRange } from "../utils/time";
 import {
-  cutOptions,
   endsOptions,
-  extrusionOptions,
   workCentersList,
-  drawingOption,
-  groundOptions,
 } from "./lists";
 import { removeAllWhiteSpace } from "../utils/regexFuncs";
 
@@ -62,6 +58,7 @@ const renderBaseProductColumnDict = (
     Job_Number: {
       id: "job_number",
       googleSheetHeader: "Job Number",
+      shortHeader: "JoNo",
       columnDef: {
         headerFunction: "sort",
         cell: {
@@ -116,6 +113,7 @@ const renderBaseProductColumnDict = (
     Customer: {
       id: "customer",
       googleSheetHeader: "Customer",
+      shortHeader: "Cust",
       columnDef: {
         headerFunction: "sort",
         cell: {
@@ -147,6 +145,7 @@ const renderBaseProductColumnDict = (
     Text: {
       id: "text",
       googleSheetHeader: "Text",
+      shortHeader: "Text",
       columnDef: {
         headerFunction: "sort",
         cell: {
@@ -177,6 +176,7 @@ const renderBaseProductColumnDict = (
     Work_Center: {
       id: "work_center",
       googleSheetHeader: "Work Center",
+      shortHeader: "Center",
       columnDef: {
         headerFunction: "sort",
         cell: {
@@ -215,6 +215,7 @@ const renderBaseProductColumnDict = (
     Quantity: {
       id: "quantity",
       googleSheetHeader: "Quantity",
+      shortHeader: "Qty",
 
       columnDef: {
         headerFunction: "sort",
@@ -243,6 +244,7 @@ const renderBaseProductColumnDict = (
     Length: {
       id: "length",
       googleSheetHeader: "Length",
+      shortHeader: "Len",
 
       columnDef: {
         headerFunction: "sort",
@@ -250,34 +252,6 @@ const renderBaseProductColumnDict = (
           view: {
             readOnly: { number: {}, styles: {} },
 
-            editable: isProductsTab
-              ? {
-                  default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
-                  editing: {
-                    numberInput: { placeholder: 0, min: 0 },
-                    styles: {},
-                  },
-                }
-              : false,
-          },
-          value: {
-            type: "number",
-            default: 0,
-            nullable: false,
-            required: true,
-          },
-        },
-      },
-    },
-    Production_Quantity: {
-      id: "production_quantity",
-      googleSheetHeader: "Production Quantity",
-
-      columnDef: {
-        headerFunction: "sort",
-        cell: {
-          view: {
-            readOnly: { number: {}, styles: {} },
             editable: isProductsTab
               ? {
                   default: { chevron: { min: 0, stepCount: 10 }, styles: {} },
@@ -300,6 +274,7 @@ const renderBaseProductColumnDict = (
     Balance_Quantity: {
       id: "balance_quantity",
       googleSheetHeader: "Balance Quantity",
+      shortHeader: "Bal Qty",
 
       columnDef: {
         headerFunction: "sort",
@@ -323,6 +298,7 @@ const renderBaseProductColumnDict = (
     Requested_Ship_Date: {
       id: "requested_ship_date",
       googleSheetHeader: "Requested Ship Date",
+      shortHeader: "Ship Date",
       columnDef: {
         headerFunction: "sort",
         cell: {
@@ -382,6 +358,7 @@ const renderBaseProductColumnDict = (
     Set_Up: {
       id: "set_up",
       googleSheetHeader: "Set Up",
+      shortHeader: "Set Up",
 
       columnDef: {
         headerFunction: "sort",
@@ -411,6 +388,7 @@ const renderBaseProductColumnDict = (
     UPH: {
       id: "uph",
       googleSheetHeader: "UPH",
+      shortHeader: "UPH",
 
       columnDef: {
         headerFunction: "sort",
@@ -440,6 +418,7 @@ const renderBaseProductColumnDict = (
     Priority: {
       id: "priority",
       googleSheetHeader: "Priority",
+      shortHeader: "Priority",
 
       columnDef: {
         headerFunction: "sort",
@@ -476,6 +455,7 @@ const renderBaseProductColumnDict = (
     Scheduled_Start: {
       id: "scheduled_start",
       googleSheetHeader: "Scheduled Start",
+      shortHeader: "Sched Start",
 
       columnDef: {
         viewable: !isProductsTab,
@@ -506,6 +486,7 @@ const renderBaseProductColumnDict = (
     Scheduled_End: {
       id: "scheduled_end",
       googleSheetHeader: "Scheduled End",
+      shortHeader: "Sched End",
 
       columnDef: {
         viewable: !isProductsTab,
@@ -540,31 +521,22 @@ const renderBaseProductColumnDict = (
       columnDef: {
         cell: {
           view: {
-            readOnly: { text: {}, styles: {} },
-            editable:
-              isProductsTab || isProductionScheduleTab
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Cut...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Cut...",
-                        items: cutOptions,
-                        label: "Select",
-                      },
-                    },
-                  }
-                : false,
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
           },
           value: {
-            type: "text",
-            default: cutOptions[0],
-
-            nullable: true,
+            type: "checkbox",
+            default: false,
           },
         },
       },
@@ -576,41 +548,22 @@ const renderBaseProductColumnDict = (
       columnDef: {
         cell: {
           view: {
-            readOnly: { text: {}, styles: {} },
-            editable:
-              isProductsTab || isProductionScheduleTab
-              ? {
-                default: {
-                  button: { label: "Extrusion...", labelIsValue: true },
-                  styles: {},
-                },
-                editing: {
-                  textInput: { placeholder: "Ext" },
-                  styles: {},
-                },
-              }
-                // ? {
-                //     default: {
-                //       button: {
-                //         labelIsValue: true,
-                //         label: "Select Extrusion...",
-                //       },
-                //     },
-                //     editing: {
-                //       dropdown: {
-                //         placeholder: "Select Extrusion...",
-                //         items: extrusionOptions,
-                //         label: "Select",
-                //       },
-                //     },
-                //   }
-                : false,
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
           },
           value: {
-            type: "text",
-            default: extrusionOptions[0],
-
-            nullable: true,
+            type: "checkbox",
+            default: false,
           },
         },
       },
@@ -622,41 +575,22 @@ const renderBaseProductColumnDict = (
       columnDef: {
         cell: {
           view: {
-            readOnly: { text: {}, styles: {} },
-            editable:
-              isProductsTab || isProductionScheduleTab
-               ? {
-                default: {
-                  button: { label: "Ground...", labelIsValue: true },
-                  styles: {},
-                },
-                editing: {
-                  textInput: { placeholder: "Ground" },
-                  styles: {},
-                },
-              }
-                // ? {
-                //     default: {
-                //       button: {
-                //         labelIsValue: true,
-                //         label: "Select Ground...",
-                //       },
-                //     },
-                //     editing: {
-                //       dropdown: {
-                //         placeholder: "Select Ground...",
-                //         items: groundOptions,
-                //         label: "Select",
-                //       },
-                //     },
-                //   }
-                : false,
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
           },
           value: {
-            type: "text",
-            default: groundOptions[0],
-
-            nullable: true,
+            type: "checkbox",
+            default: false,
           },
         },
       },
@@ -681,27 +615,11 @@ const renderBaseProductColumnDict = (
                   styles: {},
                 },
               }
-                // ? {
-                //     default: {
-                //       button: {
-                //         labelIsValue: true,
-                //         label: "Select Drawing...",
-                //       },
-                //     },
-                //     editing: {
-                //       dropdown: {
-                //         placeholder: "Select Drawing...",
-                //         items: drawingOption,
-                //         label: "Select",
-                //       },
-                //     },
-                //   }
                 : false,
           },
           value: {
             type: "text",
-            default: drawingOption[0],
-
+            default: "",
             nullable: true,
           },
         },
@@ -717,31 +635,22 @@ const renderBaseProductColumnDict = (
             readOnly: { text: {}, styles: {} },
             editable:
               isProductsTab || isProductionScheduleTab
-              ? {
-                default: {
-                  button: { label: "Ends...", labelIsValue: true },
-                  styles: {},
-                },
-                editing: {
-                  textInput: { placeholder: "Ends" },
-                  styles: {},
-                },
-              }
-                // ? {
-                //     default: {
-                //       button: {
-                //         labelIsValue: true,
-                //         label: "Select Ends...",
-                //       },
-                //     },
-                //     editing: {
-                //       dropdown: {
-                //         placeholder: "Select Ends...",
-                //         items: endsOptions,
-                //         label: "Select",
-                //       },
-                //     },
-                //   }
+              
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Ends...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Ends...",
+                        items: endsOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
                 : false,
           },
           value: {
@@ -798,55 +707,10 @@ export const workCenterSchedulesTab: TabOption = {
   id: "work_center_schedules",
   name: "Work Center Schedules",
   googleSheetName: "Work Center Schedules",
-  //sqlTableName: "WorkCenterSchedules",
-  //googleSheetName: "Work Center Schedules",
   columnDict: {
-    // Id: {
-    //   id: "id",
-    //   googleSheetHeader: null,
-
-    //   columnDef: {
-    //     cell: {
-    //       view: {
-    //         readOnly: {
-    //           hidden: {},
-    //         },
-    //         editable: false
-    //       },
-    //       value: {
-    //         type: "checkbox",
-    //         default: false,
-    //       },
-    //     },
-    //     enableSorting: false,
-    //     enableHiding: false,
-    //   },
-    // },
     Date_Weekday_Holiday: {
       id: "date_weekday_holiday",
       googleSheetHeader: "Date / Weekday / Holiday",
-
-      // Normalize and validate the value
-      //   const weekdayRegex =
-      //     /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)$/i;
-      //   const mmddRegex = /^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // MM-DD
-      //   const yyyymmddRegex =
-      //     /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/; // YYYY-MM-DD
-
-      //   if (weekdayRegex.test(value)) {
-      //     // It's a weekday, store as-is
-      //     return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); // Capitalize
-      //   } else if (mmddRegex.test(value)) {
-      //     // It's an MM-DD holiday
-      //     return value; // Store in MM-DD format
-      //   } else if (yyyymmddRegex.test(value)) {
-      //     // It's a specific date (YYYY-MM-DD)
-      //     return value; // Store in YYYY-MM-DD format
-      //   } else {
-      //     // Invalid format
-      //     throw new Error(`Invalid Date_Weekday_Holiday value: ${value}`);
-      //   }
-      // },
       columnDef: {
         enableHiding: true,
         enableSorting: true,
@@ -870,8 +734,6 @@ export const workCenterSchedulesTab: TabOption = {
 export const ledgersTab: TabOption = {
   id: "ledger",
   name: "Ledger",
-  //googleSheetName: "google",
-  //sqlTableName: "Ledger",
   googleSheetName: "Ledger",
   columnDict: {
     Id: {

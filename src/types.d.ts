@@ -14,7 +14,6 @@ type GanttProductData = {
   title: string;
   description: string;
   customer: string;
-  productionQuantity: number;
   balanceQuantity: number;
 }
 
@@ -138,36 +137,6 @@ type GoogleSheetHeader =
   | "End"
   | "On";
 
-// type SqlTableHeader =
-//   | "id"
-//   | "work_center"
-//   | "job_number"
-//   | "customer"
-//   | "text"
-//   | "quantity"
-//   | "length"
-//   | "production_quantity"
-//   | "requested_ship_date"
-//   | "requested_ship_time"
-//   | "set_up"
-//   | "uph"
-//   | "cut"
-//   | "extrusion"
-//   | "ground"
-//   | "drawing"
-//   | "ends"
-//   | "balance_quantity"
-//   | "priority"
-//   | "scheduled_start"
-//   | "scheduled_end"
-//   // Schedule Data
-//   | "date_weekday_holiday"
-//   | "date"
-//   | "time"
-//   | "start"
-//   | "end"
-//   | "notes"
-//   | "on";
 
 type Conditionals =
   | "is"
@@ -347,6 +316,7 @@ type DataColumnDict = {
     //sqlText: string;
     //sqlTableHeader: SqlTableHeader;
     googleSheetHeader: GoogleSheetHeader | null;
+    shortHeader?: string
     //toSqlConverter?: (value: string) => any;
     //toGoogleConverter?: (value: any) => string;
     columnDef?: DataColumnDefinition;
@@ -413,14 +383,13 @@ type ProductData = {
   "Text": string;
   "Quantity": number;
   "Length": number;
-  "Production Quantity": number;
   "Requested Ship Date": Date;
   "Set Up": number;
   "UPH": number;
-  "Cut": CutColumn;
-  "Extrusion": ExtrusionColumn;
-  "Ground": GroundColumn;
-  "Drawing": DrawingColumn;
+  "Cut": boolean
+  "Extrusion": boolean
+  "Ground": boolean;
+  "Drawing": string;
   "Ends": EndsColumn;
   "Balance Quantity": number;
   "Priority": number;
@@ -486,25 +455,6 @@ type WorkCenter =
   | "Loose BW"
   | "Ready for inspection";
 
-type CutColumn =
-  | "_"
-  | "Cut"
-  | "Extrusion"
-  | "Ground"
-  | "Drawing"
-  | "Ends"
-  | "None";
 
-type ExtrusionColumn = "_" | "Ext 1" | "Ext 2" | "Ext 3" | "Ext 4" | "Ext 5";
 
-type GroundColumn =
-  | "_"
-  | "Grind 1"
-  | "Grind 2"
-  | "Grind 3"
-  | "Grind 4"
-  | "Grind 5";
-
-type DrawingColumn = "_" | "Draw 1" | "Draw 2" | "Draw 3" | "Draw 4" | "Draw 5";
-
-type EndsColumn = "_" | "End 1" | "End 2" | "End 3" | "End 4" | "End 5";
+type EndsColumn = "_" | "Open" | "Lace" | "End" | "Long"

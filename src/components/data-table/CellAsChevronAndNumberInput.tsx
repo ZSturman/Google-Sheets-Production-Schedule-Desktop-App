@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { BsChevronCompactDown, BsChevronCompactUp } from "react-icons/bs";
 import { useDebounce } from "../../hooks/useDebounce";
+import { Input } from "../ui/input";
 
 type CellAsChevronAndNumberInputProps = {
   value: string;
@@ -100,24 +101,26 @@ const CellAsChevronAndNumberInput: React.FC<
   return (
     <div>
       {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={currentValue}
-          onChange={handleInputChange}
-        />
+
+        <Input
+        ref={inputRef}
+        type="text"
+        value={currentValue}
+        onChange={handleInputChange}
+        className="text-center p-0 "
+      />
       ) : (
-        <>
-          <Button onClick={incrementValue} variant="ghost" size="sm">
+        <div className="flex flex-col items-center justify-center">
+          <button onClick={incrementValue}  className="bg-transparent text-black hover:bg-transparent hover:text-black shadow-none py-0  w-full flex items-center justify-center">
             <BsChevronCompactUp />
-          </Button>
-          <Button onClick={() => setIsEditing(true)}>
+          </button>
+          <Button onClick={() => setIsEditing(true)} className="bg-transparent text-black hover:bg-transparent hover:text-black shadow-none border-1px border-black">
             {currentValue || "Click to edit"}
           </Button>
-          <Button onClick={decrementValue} variant="ghost" size="sm">
+          <button onClick={decrementValue}  className="bg-transparent text-black hover:bg-transparent hover:text-black shadow-none py-0  w-full flex items-center justify-center">
             <BsChevronCompactDown />
-          </Button>
-        </>
+          </button>
+        </div>
       )}
     </div>
   );

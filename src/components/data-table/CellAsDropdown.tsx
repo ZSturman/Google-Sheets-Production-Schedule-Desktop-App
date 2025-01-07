@@ -34,8 +34,8 @@ const CellAsDropdown: React.FC<CellAsDropdownProps> = ({
   };
 
   return (
-    <Select value={currentValue} onValueChange={(v) => handleSave(v)}>
-      <SelectTrigger className="text-black">
+    <Select value={currentValue} onValueChange={(v) => handleSave(v)} >
+      <SelectTrigger className="text-black border-[1px] border-black text-xs">
         <SelectValue
           placeholder={
             currentValue === "UNASSIGNED"
@@ -46,7 +46,7 @@ const CellAsDropdown: React.FC<CellAsDropdownProps> = ({
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel className="text-black">
+          <SelectLabel className="text-black text-xs">
             {dropdownProps.label}
           </SelectLabel>
           {dropdownProps.items.map((item) => (

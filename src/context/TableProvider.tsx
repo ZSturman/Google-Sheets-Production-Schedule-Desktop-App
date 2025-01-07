@@ -168,7 +168,7 @@ export const TableProvider = ({ children }: TableProviderProps) => {
       return [];
     }
     return Object.values(selectedTab.columnDict).map(
-      ({ googleSheetHeader, id, columnDef }) => {
+      ({ googleSheetHeader, shortHeader, id, columnDef }) => {
         const { headerFunction, cell, enableHiding, enableSorting } =
           columnDef || {};
 
@@ -204,18 +204,18 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                 };
 
                 return (
-                  <Button
-                    className="bg-transparent text-zinc-700 shadow-none"
-                    variant="secondary"
+                  <button
+                    className="bg-transparent text-zinc-700 shadow-none p-1"
+                    
                     onClick={handleSortClick}
                   >
-                    {googleSheetHeader}
+                    {shortHeader ? shortHeader : googleSheetHeader}
                     {context.column.getIsSorted() === "asc" && <span> ▲</span>}
                     {context.column.getIsSorted() === "desc" && <span> ▼</span>}
-                  </Button>
+                  </button>
                 );
               default:
-                return <span>{googleSheetHeader}</span>;
+                return <span>{shortHeader ? shortHeader :googleSheetHeader}</span>;
             }
           },
           cell: ({ row, column }) => {
@@ -310,8 +310,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                   };
                 }
 
-                console.log("Button props", buttonProps);
-
                 if ("calendar" in cell.view.editable.editing.popup.content) {
                   return (
                     <CellAsPopupDateTimePicker
@@ -319,11 +317,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                       onSave={(newValue) => {
                         updateCellValue(row, column, newValue);
                       }}
-                      //triggerProps={buttonProps}
-                      //popupProps={cell.view.editable.editing.popup}
-                      // calendarProps={
-                      //   cell.view.editable.editing.popup.content.calendar
-                      // }
                     />
                   );
                 }
@@ -435,10 +428,8 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     // Get selected rows
     const selectedRows = table.getSelectedRowModel().rows;
 
-    const customerFilterValue = table
-      .getColumn("customer")
-      ?.getFilterValue() as string;
-    const textFilterValue = table.getColumn("text")?.getFilterValue() as string;
+    const jobNumberFilterValue = table
+      .getColumn("job_number")?.getFilterValue() as string;
 
     const handleConfirmDelete = (confirmed: boolean) => {
       if (confirmed) {
@@ -468,17 +459,13 @@ export const TableProvider = ({ children }: TableProviderProps) => {
           />
 
           <FilterInput
-            placeholder="Filter customer name..."
-            value={customerFilterValue ?? ""}
+            placeholder="Filter Job Number..."
+            value={jobNumberFilterValue ?? ""}
             onChange={(value) =>
-              table.getColumn("customer")?.setFilterValue(value)
+              table.getColumn(
+                "job_number"
+              )?.setFilterValue(value)
             }
-          />
-
-          <FilterInput
-            placeholder="Filter text..."
-            value={textFilterValue ?? ""}
-            onChange={(value) => table.getColumn("text")?.setFilterValue(value)}
           />
 
           <ViewOptions columns={table.getAllColumns()} />
