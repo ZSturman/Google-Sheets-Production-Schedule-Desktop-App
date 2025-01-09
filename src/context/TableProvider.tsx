@@ -58,7 +58,8 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     loading,
     handleDataChange,
     handleDeleteRows,
-    processAllWorkCenters
+    processAllWorkCenters,
+    refreshData
   } = useData();
   const { selectedTab } = useTab();
 
@@ -119,13 +120,14 @@ export const TableProvider = ({ children }: TableProviderProps) => {
       }
 
       // Add the new row optimistically
-      setSelectedData((prevData) => [newRow, ...prevData]);
+      setSelectedData((prevData) => [...prevData, newRow]);
 
       try {
         // Simulate an async operation (e.g., API call)
         await handleDataChange(selectedTab, "add", newRow);
 
         console.log("Row added successfully!");
+        await refreshData();
       } catch (error) {
         console.error("Failed to add new row:", error);
 
@@ -409,18 +411,20 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     );
   };
 
-  const renderProductionScheduleTableOptions = () => {
-    if (!table) return null;
+// TableProvider.tsx
 
-    return (
-      <div className="flex flex-row gap-2">
-        <Button onClick={processAllWorkCenters}>
-          Process All Work Centers
-        </Button>
-        <ViewOptions columns={table.getAllColumns()} />
-      </div>
-    );
-  };
+const renderProductionScheduleTableOptions = () => {
+  if (!table) return null;
+
+  return (
+    <div className="flex flex-row gap-2">
+      <Button onClick={processAllWorkCenters} >
+        Process All Work Centers
+      </Button>
+      <ViewOptions columns={table.getAllColumns()} />
+    </div>
+  );
+};
 
   const renderProductsTableOptions = () => {
     if (!table) return null;

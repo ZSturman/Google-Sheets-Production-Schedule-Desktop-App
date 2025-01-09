@@ -5,10 +5,9 @@ import { TableProvider } from "../context/TableProvider";
 import ErrorBoundary from "./ErrorBoundary";
 import CurrentProduct from "./CurrentProduct";
 import { GanttProvider } from "../context/GanttProvider";
-import TimelineComponent from "./gantt/TimelineComponent";
 import { useCredentials } from "../context/CredentialProvider";
 import RefreshButton from "./RefreshButton";
-import { ChartBar } from "./gantt/ChartTest";
+import {  ChartCustomBar } from "./gantt/GanttChart";
 
 const SelectedTab = () => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
@@ -35,8 +34,8 @@ const SelectedTab = () => {
           <GanttProvider>
             <ErrorBoundary>
               <CurrentProduct />
-              <ChartBar />
-              <TimelineComponent />
+    
+              <ChartCustomBar />
               <DataTable />
             </ErrorBoundary>
           </GanttProvider>

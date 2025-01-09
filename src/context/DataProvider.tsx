@@ -88,6 +88,8 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(Date.now());
 
+
+
   const handleDataChange = async (
     tab: TabOption,
     actionType: "add" | "update",
@@ -202,7 +204,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   };
 
   const processSpecificWorkCenter = async (workCenter: WorkCenter) => {
-    console.log("PROCESSING WORK CENTER", workCenter);
     if (!productsPopulated || !workCenterSchedulesPopulated) {
       return;
     }
@@ -238,57 +239,54 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   };
 
   const processAllWorkCenters = async () => {
-    console.log("Products Populated", productsPopulated);
-    console.log("WorkCenterSchedules Populated", workCenterSchedulesPopulated);
     if (!productsPopulated || !workCenterSchedulesPopulated) {
-      console.log("Not Populated");
       return;
-    } else {
-      console.log("Populated");
     }
 
-    const workCenterDB: WorkCenter[] = workCenters.filter(
-      (workCenter) =>
-        workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
-    );
+    try {
+      if (!productsPopulated || !workCenterSchedulesPopulated) {
+        return;
+      }
 
-    // Calculate Schedule Start and End for each work center
-    const { products, workCenterSchedules } = dataRef.current;
-
-    console.log("workCenterSchedules", workCenterSchedules);
-
-    const updatedRows: ProductData[] = [];
-
-    for (const workCenter of workCenterDB) {
-      const returnedTimes = await calculateScheduleStartAndEnd(
-        products,
-        workCenterSchedules,
-        workCenter
+      const workCenterDB: WorkCenter[] = workCenters.filter(
+        (workCenter) =>
+          workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
       );
 
-      console.log("Returned Times", returnedTimes);
+      const { products, workCenterSchedules } = dataRef.current;
+      const updatedRows: ProductData[] = [];
 
-      if (returnedTimes) {
-        returnedTimes.forEach((updatedRow) => {
-          const productIndex = dataRef.current.products.findIndex(
-            (p) => p.id === updatedRow.id
-          );
+      for (const workCenter of workCenterDB) {
+        const returnedTimes = await calculateScheduleStartAndEnd(
+          products,
+          workCenterSchedules,
+          workCenter
+        );
 
-          if (productIndex !== -1) {
-            dataRef.current.products[productIndex] = updatedRow;
-            updatedRows.push(updatedRow);
-          }
-        });
+        if (returnedTimes) {
+          returnedTimes.forEach((updatedRow) => {
+            const productIndex = dataRef.current.products.findIndex(
+              (p) => p.id === updatedRow.id
+            );
+
+            if (productIndex !== -1) {
+              dataRef.current.products[productIndex] = updatedRow;
+              updatedRows.push(updatedRow);
+            }
+          });
+        }
       }
-    }
 
-    // Push updates to the database
-    for (const updatedRow of updatedRows) {
-      await handleDataChange(productsTab, "update", updatedRow);
-    }
+      // Push updates to the database
+      for (const updatedRow of updatedRows) {
+        await handleDataChange(productsTab, "update", updatedRow);
+      }
 
-    // Ensure state reflects the updated rows
-    setState({ ...dataRef.current });
+      setState({ ...dataRef.current });
+    } catch (err) {
+      console.error("Error processing all work centers:", err);
+    } 
+  
   };
 
   const handleDeleteRows = async (
@@ -382,8 +380,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       productsTab,
       dataRef.current.products
     );
-    console.log("productsData", productsData);
-    console.log("State products data", dataRef.current.products);
     updateGoogleSheetData(
       credentialsPath,
       sheetIdentifier,
@@ -397,7 +393,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       workCenterSchedulesTab,
       dataRef.current.workCenterSchedules
     );
-    console.log("workCenterSchedulesData", workCenterSchedulesData);
     updateGoogleSheetData(
       credentialsPath,
       sheetIdentifier,
@@ -701,7 +696,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       processSpecificWorkCenter,
       refreshData
     }),
-    [state, loading, updatedAt]
+    [state, loading, updatedAt,]
   );
 
 

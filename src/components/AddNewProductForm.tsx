@@ -113,7 +113,7 @@ const NewProductForm = ({
       Ground: values.ground,
       Drawing: values.drawing,
       Ends: values.ends as EndsColumn,
-      "Balance Quantity": values.quantity,
+      "Balance Quantity": values.quantity * values.length,
       "Job Number": values.jobNumber,
       "Scheduled Start": new Date(),
       "Scheduled End": new Date(),

@@ -17,6 +17,17 @@ type GanttProductData = {
   balanceQuantity: number;
 }
 
+type GanttItem = {
+  start: Date;
+  end: Date;
+  due: Date;
+  title: string;
+  description: string;
+  customer: string;
+  balanceQuantity: number;
+}
+
+
 
 type DataTableT =
   | ProductData[]
