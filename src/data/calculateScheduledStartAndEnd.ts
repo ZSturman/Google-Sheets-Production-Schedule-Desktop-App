@@ -5,7 +5,6 @@ export const calculateScheduleStartAndEnd = async (
   workCenterSchedule: WorkCenterScheduleData[],
   workCenter: WorkCenter
 ): Promise<ProductData[] | null> => {
-
   if (
     workCenter === "UNASSIGNED" ||
     workCenter === "Ready for inspection" ||
@@ -33,7 +32,6 @@ export const calculateScheduleStartAndEnd = async (
     // Calculate the time needed to complete the product
     const timeToCompleteProduct = getTimeToComplete(product);
 
-
     // Schedule the product
     let { scheduledStart, scheduledEnd } = calculateProductSchedule(
       workCenter,
@@ -41,7 +39,6 @@ export const calculateScheduleStartAndEnd = async (
       timeToCompleteProduct,
       workCenterSchedule
     );
-
 
     // Ensure the scheduled start is not unnecessarily advanced
     if (
@@ -73,7 +70,6 @@ const calculateProductSchedule = (
   workCenterSchedule: WorkCenterScheduleData[],
   depth = 0 // Add a depth parameter to track recursion depth
 ): { scheduledStart: Date; scheduledEnd: Date } => {
-
   if (depth > 100) {
     // Exit if recursion exceeds 20 levels
     console.error("Max recursion depth reached. Exiting recursion.");
@@ -85,7 +81,6 @@ const calculateProductSchedule = (
   let startTime = new Date(currentStartTime);
 
   while (!isWorkCenterOpen(workCenter, startTime, workCenterSchedule)) {
-    
     startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
   }
 
@@ -96,10 +91,8 @@ const calculateProductSchedule = (
     startTime,
     workCenterSchedule
   );
-  
 
   const timeUntilWorkCenterCloses = closingTime.getTime() - startTime.getTime();
-
 
   // Handle negative or invalid closing times
   if (timeUntilWorkCenterCloses <= 0) {
@@ -121,7 +114,7 @@ const calculateProductSchedule = (
     const scheduledEnd = new Date(
       scheduledStart.getTime() + remainingTimeToComplete
     );
-  
+
     // Ensure the scheduledEnd doesn’t exceed the closing time
     if (scheduledEnd.getTime() > closingTime.getTime()) {
       console.warn(
@@ -132,20 +125,18 @@ const calculateProductSchedule = (
         scheduledEnd: closingTime,
       };
     }
-  
-   
+
     return { scheduledStart, scheduledEnd };
   } else {
     // Handle time spilling into the next day
     const timeUsedToday = timeUntilWorkCenterCloses;
     const remainingAfterToday = remainingTimeToComplete - timeUsedToday;
-  
+
     // Calculate next day's start time (assume work center opens at 6:00 AM)
     const nextStartTime = new Date(closingTime);
     nextStartTime.setDate(nextStartTime.getDate() + 1);
     nextStartTime.setHours(6, 0, 0, 0);
 
-  
     // Recurse for remaining time
     const nextDaySchedule = calculateProductSchedule(
       workCenter,
@@ -154,7 +145,7 @@ const calculateProductSchedule = (
       workCenterSchedule,
       depth + 1
     );
-  
+
     return {
       scheduledStart: scheduledStart,
       scheduledEnd: nextDaySchedule.scheduledEnd, // Extend schedule
@@ -170,10 +161,6 @@ const isWorkCenterOpen = (
   const day = date.toLocaleString("en-US", { weekday: "long" });
   const timeString = date.toTimeString().slice(0, 5); // Extracts HH:mm
 
-  console.log("Checking if work center is open...");
-  console.log("Day:", day);
-  console.log("Time:", timeString);
-
   const daySchedule = schedules.find(
     (item) => item.date_weekday_holiday === day
   );
@@ -188,7 +175,6 @@ const isWorkCenterOpen = (
       ? daySchedule[normalizedScheduleKey]
       : defaultOnOffTime;
 
-
   const [openTime, closeTime] = workCenterSchedule.split("-");
   const isOpen = timeString >= openTime && timeString <= closeTime;
 
@@ -200,11 +186,7 @@ const getTimeToComplete = (product: ProductData): number => {
   const setUpTime = parseFloat(product.set_up || "0"); // Setup time in minutes
   const balanceQuantity = parseFloat(product.balance_quantity || "0");
 
-  if (
-    isNaN(uph) ||
-    isNaN(setUpTime) ||
-    isNaN(balanceQuantity)
-  ) {
+  if (isNaN(uph) || isNaN(setUpTime) || isNaN(balanceQuantity)) {
     console.error("Invalid numeric values:", {
       uph,
       setUpTime,
@@ -224,23 +206,19 @@ const getTimeToComplete = (product: ProductData): number => {
     (balanceQuantity / uph) * 60 * 60 * 1000 + // Convert hours to milliseconds
     setUpTime * 60 * 1000; // Add setup time in milliseconds
 
-
   return timeToComplete;
 };
-
 
 const getTimeTileWorkCenterCloses = (
   workCenter: string,
   date: Date,
   schedules: WorkCenterScheduleData[]
 ): Date => {
-  console.log("Getting work center closing time...");
   const day = date.toLocaleString("en-US", { weekday: "long" });
 
   const daySchedule = schedules.find(
     (item) => item.date_weekday_holiday === day
   );
-  
 
   const normalizedWorkCenter = workCenter.replace(/\s+/g, "").toLowerCase();
   const normalizedScheduleKey = Object.keys(daySchedule || {}).find(
@@ -252,8 +230,6 @@ const getTimeTileWorkCenterCloses = (
       ? daySchedule[normalizedScheduleKey]
       : defaultOnOffTime;
 
-  
-
   const [_, closeTime] = workCenterSchedule.split("-");
   const closingDate = new Date(
     date.getFullYear(),
@@ -263,6 +239,5 @@ const getTimeTileWorkCenterCloses = (
     parseInt(closeTime.slice(3, 5))
   );
 
-  
   return closingDate;
 };

@@ -38,8 +38,8 @@ export const TabProvider = ({ children }: TabProviderProps) => {
 
   const tabsList = () => {
     return (
-      <Sidebar>
-        <SidebarContent className="bg-zinc-300">
+      <Sidebar >
+        <SidebarContent className="bg-zinc-300 text-xs">
           <div className="mt-4 mx-2">
             <SidebarTrigger />
           </div>
@@ -47,7 +47,7 @@ export const TabProvider = ({ children }: TabProviderProps) => {
           {sidebarTabGroups.map((group, index) => (
             <SidebarGroup key={`${group.groupHeader}-${index}`} >
               <SidebarGroupLabel>{group.groupHeader}</SidebarGroupLabel>
-              <SidebarGroupContent className="space-y-2">
+              <SidebarGroupContent className="space-y-1">
                 {group.groupTabs.map((tab, index) => (
                   <SidebarMenuItem key={`${tab.id}-${index}`} className="list-none">
                     <SidebarMenuButton
@@ -55,11 +55,11 @@ export const TabProvider = ({ children }: TabProviderProps) => {
                       isActive={tab.id === selectedTab.id}
                     >
                       <Button
-                        className={
+                        className={`${
                           tab.id === selectedTab.id
                             ? "text-black bg-slate-300"
                             : "text-white bg-zinc-600"
-                        }
+                        } text-xs`}
        
                         key={tab.id}
                         value={tab.id}

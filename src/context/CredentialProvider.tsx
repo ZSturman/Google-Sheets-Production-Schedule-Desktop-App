@@ -11,12 +11,12 @@ import {
   readTextFile,
   writeTextFile,
   mkdir,
-  remove 
+  remove,
 } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import { withTimeout } from "../lib/withTimeout";
 import { invoke } from "@tauri-apps/api/core";
-import { join, appDataDir } from '@tauri-apps/api/path';
+import { join, appDataDir } from "@tauri-apps/api/path";
 
 type CredentialsType = {
   credentialsPath: string | LoadingState;
@@ -29,9 +29,7 @@ type CredentialsType = {
   addIdentifier: (identifier: string) => void;
   handleSelectIdentifier: (selectedIdentifier: string) => void;
   deleteCredentials: () => void;
-  
   ensureCredentialsFileExists: () => Promise<string>;
-
   refresh: () => void;
 };
 
@@ -46,7 +44,6 @@ const defaultCredentials: CredentialsType = {
   addIdentifier: () => {},
   handleSelectIdentifier: () => {},
   deleteCredentials: () => {},
-  
   ensureCredentialsFileExists: async () => "",
   refresh: () => {},
 };
@@ -68,13 +65,11 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     string | LoadingState
   >("loading");
   const [store, setStore] = useState<Store | null>(null);
-  //const [db, setDb] = useState<Database | null>(null);
 
   const STORE = {
     STORE_NAME: "rods-sheets.Credentials.json",
     IDENTIFIERS: "identifiers",
     LAST_USED_IDENTIFIER: "selectedIdentifier",
-    //DB_NAME: "rods-sheets2.db",
   };
 
   const CREDENTIALS_FILENAME = "credentials.json";
@@ -132,7 +127,7 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     } catch (e) {
       console.error("Error during refresh:", e);
     }
-  }
+  };
 
   const setupAppDirectory = async () => {
     const appDataDirPath = await appDataDir();
@@ -151,37 +146,36 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     setStore(store);
   };
 
+  const deleteCredentials = async () => {
+    if (!appDirectoryPath || appDirectoryPath === "loading") return;
 
+    try {
+      const credentialsFilePath = await join(
+        appDirectoryPath,
+        CREDENTIALS_FILENAME
+      );
 
-const deleteCredentials = async () => {
-  if (!appDirectoryPath || appDirectoryPath === 'loading') return;
+      const result = await exists(credentialsFilePath);
 
-  try {
-    const credentialsFilePath = await join(appDirectoryPath, CREDENTIALS_FILENAME);
+      if (!result) {
+        setCredentialsPath("error");
+        return;
+      }
 
-    const result = await exists(credentialsFilePath)
-  
-    if (!result) {
+      if (result) {
+        await remove(credentialsFilePath);
+      }
+
+      // Reset related state values
       setCredentialsPath("error");
-      //console.error("Timeout: Failed to check credentials path");
-      return;
+      setTestOutput(null);
+      setIdentifiers([]);
+
+      console.log("Credentials deleted successfully.");
+    } catch (error) {
+      console.error("Failed to delete credentials:", error);
     }
-
-    if (result) {
-      await remove(credentialsFilePath);
-    }
-
-    // Reset related state values
-    setCredentialsPath('error');
-    setTestOutput(null);
-    setIdentifiers([]);
-
-    console.log('Credentials deleted successfully.');
-  } catch (error) {
-    console.error('Failed to delete credentials:', error);
-  }
-};
-
+  };
 
   const checkForCredentialsPath = async () => {
     if (appDirectoryPath === "loading") {
@@ -193,17 +187,13 @@ const deleteCredentials = async () => {
       CREDENTIALS_FILENAME
     );
 
-    const result = await withTimeout(
-      exists(credentialsFilePath),
-      5000 
-    );
+    const result = await withTimeout(exists(credentialsFilePath), 5000);
 
     if (result === "timeout") {
       setCredentialsPath("error");
       console.error("Timeout: Failed to check credentials path");
       return;
     }
-    
 
     if (result) {
       setCredentialsPath(credentialsFilePath);
@@ -255,24 +245,24 @@ const deleteCredentials = async () => {
     if (appDirectoryPath === "loading" || appDirectoryPath === "error") {
       const appDataDirPath = await appDataDir();
       const appDataDirExists = await exists(appDataDirPath);
-  
+
       if (!appDataDirExists) {
         await mkdir(appDataDirPath, { recursive: true });
       }
-  
+
       setAppDirectoryPath(appDataDirPath);
     }
-  
+
     const credentialsFilePath = await join(
       appDirectoryPath as string,
       CREDENTIALS_FILENAME
     );
-  
+
     const fileExists = await exists(credentialsFilePath);
     if (!fileExists) {
       await writeTextFile(credentialsFilePath, "{}"); // Create an empty JSON file
     }
-  
+
     return credentialsFilePath;
   };
 
@@ -295,7 +285,6 @@ const deleteCredentials = async () => {
       setCredentialsPath(credentialsFilePath);
     }
   };
-
 
   const addIdentifier = async (identifier: string) => {
     if (!store) return;
@@ -345,7 +334,6 @@ const deleteCredentials = async () => {
     }
     testAuth();
   }, [credentialsPath, sheetIdentifier]);
-  
 
   return (
     <Credentials.Provider
@@ -360,7 +348,7 @@ const deleteCredentials = async () => {
         handleSelectIdentifier,
         deleteCredentials,
         ensureCredentialsFileExists,
-        refresh
+        refresh,
       }}
     >
       <div>{children}</div>

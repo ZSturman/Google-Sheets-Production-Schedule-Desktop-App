@@ -8,13 +8,13 @@ type CellAsCheckboxProps = {
 
 const CellAsCheckbox: React.FC<CellAsCheckboxProps> = ({ value, onSave }) => {
 
-  const [isChecked, setIsChecked] = useState<boolean>(value === "true");
+  const [isChecked, setIsChecked] = useState<boolean>(value === "TRUE");
 
   // Handle checkbox change
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.checked;
     setIsChecked(newValue);
-    handleSave(newValue ? "true" : "false");
+    handleSave(newValue ? "TRUE" : "FALSE");
   };
 
   // Save the updated value

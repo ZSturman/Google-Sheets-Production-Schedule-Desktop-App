@@ -56,6 +56,7 @@ type DataContextType = {
   processAllWorkCenters: () => Promise<void>;
   processSpecificWorkCenter: (workCenter: WorkCenter) => Promise<void>;
   refreshData: () => Promise<void>;
+  unsavedChanges: boolean;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -88,6 +89,8 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(Date.now());
 
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
+
 
 
   const handleDataChange = async (
@@ -95,11 +98,13 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     actionType: "add" | "update",
     data: ProductData | WorkCenterScheduleData | LedgerData
   ) => {
-    console.log(
-      productsDebounceTimer,
-      workCenterSchedulesDebounceTimer,
-      ledgerDebounceTimer
-    );
+    // console.log(
+    //   productsDebounceTimer,
+    //   workCenterSchedulesDebounceTimer,
+    //   ledgerDebounceTimer
+    // );
+
+    setUnsavedChanges(true);
 
     try {
       // Determine the relevant timer state and commit function
@@ -122,7 +127,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       }
 
       if (actionType === "add" || actionType === "update") {
-        console.log("Is Add or Update");
+        //console.log("Is Add or Update");
         if (!tab.columnDict) {
           console.error("Column dictionary not found for tab:", tab);
           return;
@@ -192,14 +197,22 @@ export const DataProvider = ({ children }: DataProviderProps) => {
         if (prevTimer !== null) {
           clearTimeout(prevTimer); // Clear the previous timer
         }
-
+      
         return window.setTimeout(async () => {
-          await commitFunction(); // Commit the relevant table
+          try {
+            await commitFunction(); // Commit the relevant table
+          } catch (error) {
+            console.error("Error committing data:", error);
+          } finally {
+            setUnsavedChanges(false); // Reset only after commit
+          }
           timerStateSetter(null); // Reset the timer state
-        }, 3000); // Adjust debounce time as needed (e.g., 3000ms = 3 seconds)
+        }, 3000); // Adjust debounce time as needed
       });
     } catch (error) {
       console.error(`Error during ${actionType} operation:`, error);
+    } finally {
+      setUnsavedChanges(false);
     }
   };
 
@@ -685,26 +698,40 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     }
   };
 
-  const contextValue = useMemo(
-    () => ({
-      state,
-      handleDataChange,
-      handleDeleteRows,
-      loading,
-      updatedAt,
-      processAllWorkCenters,
-      processSpecificWorkCenter,
-      refreshData
-    }),
-    [state, loading, updatedAt,]
-  );
+  // const contextValue = useMemo(
+  //   () => ({
+  //     state,
+  //     handleDataChange,
+  //     handleDeleteRows,
+  //     loading,
+  //     updatedAt,
+  //     processAllWorkCenters,
+  //     processSpecificWorkCenter,
+  //     refreshData,
+  //     unsavedChanges
+  //   }),
+  //   [state, loading, updatedAt, unsavedChanges]
+  // );
 
+  const memoizedState = useMemo(() => state, [state]);
+
+const contextValue = {
+  state: memoizedState, // Only memoize the state
+  handleDataChange,
+  handleDeleteRows,
+  loading, // Directly use the latest values
+  updatedAt, // Directly use the latest values
+  processAllWorkCenters,
+  processSpecificWorkCenter,
+  refreshData,
+  unsavedChanges, // Directly use the latest values
+};
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
         console.log("Loading timeout reached, reloading...");
-        window.location.reload(); // Optionally reload the page
+        window.location.reload(); 
       }
     }, 3000); 
 

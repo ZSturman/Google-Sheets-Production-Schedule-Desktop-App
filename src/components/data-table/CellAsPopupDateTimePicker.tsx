@@ -1,7 +1,6 @@
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { Button } from "../ui/button";
-import { useEffect, useState } from "react";
-import { CalendarIcon } from "lucide-react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 import { Label } from "../ui/label";
@@ -36,11 +35,6 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
       : new Date() // Default to the current date
   );
 
-  useEffect(() => {
-    if (!value || isNaN(new Date(normalizeDateTimeString(value)).getTime())) {
-      console.error("Invalid date value:", value);
-    }
-  }, [value]);
 
   const handleDateChange = (newDate: Date | undefined) => {
     if (newDate && !isNaN(newDate.getTime())) {
@@ -66,9 +60,7 @@ const CellAsPopupDateTimePicker: React.FC<CellAsPopupDateTimePickerProps> = ({
   const handleSave = () => {
     if (date && !isNaN(date.getTime())) {
       onSave(date.toISOString());
-    } else {
-      console.error("Cannot save invalid date");
-    }
+    } 
   };
 
   return (

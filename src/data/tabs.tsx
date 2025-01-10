@@ -54,6 +54,154 @@ const renderBaseProductColumnDict = (
         },
       },
     }),
+        Cut: {
+      id: "cut",
+      googleSheetHeader: "Cut",
+
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
+          },
+        },
+      },
+    },
+    Extrusion: {
+      id: "extrusion",
+      googleSheetHeader: "Extrusion",
+
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
+          },
+        },
+      },
+    },
+    Ground: {
+      id: "ground",
+      googleSheetHeader: "Ground",
+
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: {
+              boolean: {},
+              styles: {},
+             },
+            editable: {
+              default: {
+                checkbox: {},
+              },
+              editing: {
+                checkbox: {},
+              },
+            },
+          },
+          value: {
+            type: "checkbox",
+            default: false,
+          },
+        },
+      },
+    },
+    Drawing: {
+      id: "drawing",
+      googleSheetHeader: "Drawing",
+
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+              ? {
+                default: {
+                  button: { label: "Drawing...", labelIsValue: true },
+                  styles: {},
+                },
+                editing: {
+                  textInput: { placeholder: "Drawing" },
+                  styles: {},
+                },
+              }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: "",
+            nullable: true,
+          },
+        },
+      },
+    },
+    Ends: {
+      id: "ends",
+      googleSheetHeader: "Ends",
+
+      columnDef: {
+        cell: {
+          view: {
+            readOnly: { text: {}, styles: {} },
+            editable:
+              isProductsTab || isProductionScheduleTab
+              
+                ? {
+                    default: {
+                      button: {
+                        labelIsValue: true,
+                        label: "Select Ends...",
+                      },
+                    },
+                    editing: {
+                      dropdown: {
+                        placeholder: "Select Ends...",
+                        items: endsOptions,
+                        label: "Select",
+                      },
+                    },
+                  }
+                : false,
+          },
+          value: {
+            type: "text",
+            default: endsOptions[0],
+
+            nullable: true,
+          },
+        },
+      },
+    },
 
     Job_Number: {
       id: "job_number",
@@ -514,154 +662,7 @@ const renderBaseProductColumnDict = (
         },
       },
     },
-    Cut: {
-      id: "cut",
-      googleSheetHeader: "Cut",
 
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: {
-              boolean: {},
-              styles: {},
-             },
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
-              },
-            },
-          },
-          value: {
-            type: "checkbox",
-            default: false,
-          },
-        },
-      },
-    },
-    Extrusion: {
-      id: "extrusion",
-      googleSheetHeader: "Extrusion",
-
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: {
-              boolean: {},
-              styles: {},
-             },
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
-              },
-            },
-          },
-          value: {
-            type: "checkbox",
-            default: false,
-          },
-        },
-      },
-    },
-    Ground: {
-      id: "ground",
-      googleSheetHeader: "Ground",
-
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: {
-              boolean: {},
-              styles: {},
-             },
-            editable: {
-              default: {
-                checkbox: {},
-              },
-              editing: {
-                checkbox: {},
-              },
-            },
-          },
-          value: {
-            type: "checkbox",
-            default: false,
-          },
-        },
-      },
-    },
-    Drawing: {
-      id: "drawing",
-      googleSheetHeader: "Drawing",
-
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: { text: {}, styles: {} },
-            editable:
-              isProductsTab || isProductionScheduleTab
-              ? {
-                default: {
-                  button: { label: "Drawing...", labelIsValue: true },
-                  styles: {},
-                },
-                editing: {
-                  textInput: { placeholder: "Drawing" },
-                  styles: {},
-                },
-              }
-                : false,
-          },
-          value: {
-            type: "text",
-            default: "",
-            nullable: true,
-          },
-        },
-      },
-    },
-    Ends: {
-      id: "ends",
-      googleSheetHeader: "Ends",
-
-      columnDef: {
-        cell: {
-          view: {
-            readOnly: { text: {}, styles: {} },
-            editable:
-              isProductsTab || isProductionScheduleTab
-              
-                ? {
-                    default: {
-                      button: {
-                        labelIsValue: true,
-                        label: "Select Ends...",
-                      },
-                    },
-                    editing: {
-                      dropdown: {
-                        placeholder: "Select Ends...",
-                        items: endsOptions,
-                        label: "Select",
-                      },
-                    },
-                  }
-                : false,
-          },
-          value: {
-            type: "text",
-            default: endsOptions[0],
-
-            nullable: true,
-          },
-        },
-      },
-    },
   };
 
   return baseProductColumnDict;

@@ -7,9 +7,6 @@ const getStatusForProduct = (product: ProductData): string => {
   const enddate = new Date(product["scheduled_end"]);
   const duedate = new Date(product["requested_ship_date"]);
 
-  console.log("Start", startdate);
-  console.log("End", enddate);
-  console.log("Due", duedate);
 
   const isReady = checkBalanceQuantity(product);
 

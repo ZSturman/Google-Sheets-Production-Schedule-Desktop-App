@@ -1,4 +1,11 @@
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   addDays,
   format,
@@ -22,27 +29,35 @@ import {
 } from "../ui/chart";
 import { Button } from "../ui/button";
 import { useGantt } from "../../context/GanttProvider";
-import CurrentProduct from "../CurrentProduct";
+
 const chartConfig = {
   notStartedOnTime: {
     label: "Not Started (On Time)",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-not-started-on-time))",
   },
   notStartedLate: {
     label: "Not Started (Late)",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--chart-not-started-late))",
   },
-  inProgressAndOnTime: {
+  inProgressOnTime: {
     label: "In Progress (On Time)",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-in-progress-on-time))",
   },
-  inProgressAndLate: {
+  inProgressLate: {
     label: "In Progress (Late)",
-    color: "hsl(var(--chart-4))",
+    color: "hsl(var(--chart-in-progress-late))",
   },
   completedBeforeDueDate: {
+    label: "Completed (Early)",
+    color: "hsl(var(--chart-completed-early))",
+  },
+  completedAfterDueDate: {
     label: "Completed",
-    color: "hsl(var(--chart-5))",
+    color: "hsl(var(--chart-completed))",
+  },
+  dueIndicator: {
+    label: "Due",
+    color: "hsl(var(--chart-due))",
   },
 };
 
@@ -55,6 +70,7 @@ export function ChartCustomBar() {
     weeksData,
     monthsData,
     toggleViewMode,
+    productionScheduleGanttOptions
   } = useGantt();
 
   // Determine the current page's data based on view mode and selected page
@@ -67,70 +83,61 @@ export function ChartCustomBar() {
 
   const { startDate, endDate, data } = currentData;
 
-  const normalizedDomain = [0, 1];
+  //const normalizedDomain = [0, 1];
 
   const getTicks = () => {
-    const totalRange =
-      currentData.endDate.getTime() - currentData.startDate.getTime();
-
     if (viewMode === "week") {
-      const weekTicks = [];
-      let current = startOfWeek(currentData.startDate, { weekStartsOn: 0 });
-      while (current <= currentData.endDate) {
-        weekTicks.push(
-          (current.getTime() - currentData.startDate.getTime()) / totalRange
-        );
-        current = addDays(current, 1); // Increment by 1 day
-      }
-      return weekTicks;
-    } else if (viewMode === "month") {
-      const start = startOfMonth(currentData.startDate);
-      const daysInMonth = getDaysInMonth(start);
-      const monthTicks = Array.from({ length: daysInMonth }, (_, i) => {
-        const day = addDays(start, i);
-        return (day.getTime() - currentData.startDate.getTime()) / totalRange;
-      });
-      return monthTicks;
+      // Leave the "weeks" part unchanged
+      const numberOfTicks =
+        (currentData.endDate.getTime() - currentData.startDate.getTime()) / 7;
+      return Array.from({ length: 7 }, (_, i) => i * numberOfTicks);
+    } else {
+      // Adjust the "months" part to calculate ticks dynamically based on the number of days in the month
+      const daysInMonth = getDaysInMonth(startDate); // Number of days in the month
+      //const numberOfTicks = daysInMonth + 1; // Include an extra tick for the end of the month
+      const timeInterval =
+        (endDate.getTime() - startDate.getTime()) / daysInMonth;
+      return Array.from({ length: daysInMonth }, (_, i) => i * timeInterval);
     }
-    return [];
   };
 
-  console.log("Ticks, ", getTicks());
-  console.log("Data, ", data);
-  console.log("Current Data, ", currentData);
-  console.log("View Mode, ", viewMode);
-  console.log("Selected Page, ", selectedPage);
-  console.log("Weeks Data, ", weeksData);
-  console.log("Months Data, ", monthsData);
-
-
-  const testData = [
-    { job_number: "Task 1", notStarted: { onTime: 1, late: 0 } },
-    { job_number: "Task 2", notStarted: { onTime: 0, late: 1 } },
-  ];
+  const tickFormatter = (value: number) => {
+    const date = new Date(value + startDate.getTime());
+    const fixedDate = addDays(date, 1);
+    console.log("DTE", date, value);
+    if (viewMode === "week") {
+      if (value === 0) {
+        return format(date, "EEE");
+      }
+      return format(fixedDate, "EEE");
+    } else {
+      if (value === 0) {
+        return format(date, "d");
+      }
+      return format(fixedDate, "d");
+    }
+  };
 
   return (
-    <Card className="m-2 p-2 shadow-none">
-      <CardHeader>
-        <CardTitle className="flex justify-between">
-          <div className="flex gap-2">
-            <Button onClick={toggleViewMode} disabled={viewMode === "week"}>
-              Week
-            </Button>
-            <Button onClick={toggleViewMode} disabled={viewMode === "month"}>
-              Month
-            </Button>
-          </div>
-          <h2 className="text-xl font-bold">
-            {format(startDate, "MMM d, yyyy")} -{" "}
-            {format(endDate, "MMM d, yyyy")}
-          </h2>{" "}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}  >
+    <div>
+      {productionScheduleGanttOptions()}
+      <div className="flex justify-between">
+        <div className="flex gap-2">
+          <Button onClick={toggleViewMode} disabled={viewMode === "week"}>
+            Week
+          </Button>
+          <Button onClick={toggleViewMode} disabled={viewMode === "month"}>
+            Month
+          </Button>
+        </div>
+        <h2 className="text-xl font-bold">
+          {format(startDate, "MMM d, yyyy")} - {format(endDate, "MMM d, yyyy")}
+        </h2>{" "}
+      </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <ChartContainer config={chartConfig}>
           <BarChart data={data} layout="vertical" height={300}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" vertical />
 
             <ChartTooltip
               content={({ active, payload }) => {
@@ -163,51 +170,52 @@ export function ChartCustomBar() {
             <YAxis dataKey="job_number" type="category" />
             <XAxis
               type="number"
-              domain={normalizedDomain}
-              tickFormatter={(value) => {
-                const absoluteTime =
-                  currentData.startDate.getTime() +
-                  value *
-                    (currentData.endDate.getTime() -
-                      currentData.startDate.getTime());
-                return viewMode === "week"
-                  ? format(new Date(absoluteTime), "EEE") // Format for day of the week
-                  : format(new Date(absoluteTime), "d"); // Format for day of the month
-              }}
+              domain={[0, endDate.getTime() - startDate.getTime()]}
               ticks={getTicks()}
-              //interval={0}
+              tickFormatter={tickFormatter}
+              interval={0}
             />
             {/* Bars */}
             <Bar
-              dataKey="notStarted.onTime"
+              dataKey="notStartedOnTime"
               stackId="a"
               fill="var(--color-notStartedOnTime)"
               label="var(--label-notStartedOnTime)"
+              barSize={20}
             />
             <Bar
-              dataKey="notStarted.late"
+              dataKey="notStartedLate"
               stackId="a"
               fill="var(--color-notStartedLate)"
+              onMouseOver={(e) => {
+                console.log("MOUSEOVER", e);
+              }}
             />
             <Bar
-              dataKey="inProgress.onTime"
+              dataKey="inProgressOnTime"
               stackId="a"
-              fill="var(--color-inProgressAndOnTime)"
+              fill="var(--color-inProgressOnTime)"
             />
             <Bar
-              dataKey="inProgress.late"
+              dataKey="inProgressLate"
               stackId="a"
-              fill="var(--color-inProgressAndLate)"
+              fill="var(--color-inProgressLate)"
             />
             <Bar
               dataKey="completedBeforeDueDate"
               stackId="a"
               fill="var(--color-completedBeforeDueDate)"
             />
+            <Bar
+              dataKey="completedAfterDueDate"
+              stackId="a"
+              fill="var(--color-completedAfterDueDate)"
+            />
           </BarChart>
         </ChartContainer>
-      </CardContent>
-      <CardFooter className="flex justify-evenly items-center">
+      </ResponsiveContainer>
+
+      <div className="flex justify-evenly items-center">
         <Button onClick={prevPage} disabled={selectedPage === 0}>
           Previous
         </Button>
@@ -225,7 +233,7 @@ export function ChartCustomBar() {
         >
           Next
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
