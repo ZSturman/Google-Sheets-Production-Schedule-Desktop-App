@@ -8,6 +8,7 @@ export const calculateScheduleStartAndEnd = async (
   if (
     workCenter === "UNASSIGNED" ||
     workCenter === "Ready for inspection" ||
+    workCenter === "Archived" ||
     data.length === 0
   ) {
     return null;

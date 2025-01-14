@@ -1,4 +1,13 @@
-import { createContext, useContext, ReactNode, useState } from "react";
+// TabProvider.tsx
+// Provides context and UI for managing tabs in the sidebar.
+
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  useEffect,
+} from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -8,9 +17,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+
 } from "../components/ui/sidebar";
 import { Button } from "../components/ui/button";
 import { sidebarTabGroups } from "../data/tabs";
+import { useCredentials } from "./CredentialProvider";
 
 type TabContextType = {
   selectedTab: TabOption;
@@ -27,29 +38,49 @@ type TabProviderProps = {
   children: ReactNode;
 };
 
-export const TabProvider = ({ children }: TabProviderProps) => {
-  const [selectedTab, setSelectedTab] = useState<TabOption>(
-    sidebarTabGroups[0].groupTabs[0]
-  );
 
+/**
+ * TabProvider component.
+ * Manages the state of the selected tab and provides a UI for selecting tabs.
+ * @param {ReactNode} children - Components that consume the tab context.
+ */
+export const TabProvider = ({ children }: TabProviderProps) => {
+  const { lastSelectedTab, selectNewTab } = useCredentials();
+  const [selectedTab, setSelectedTab] = useState<TabOption>(lastSelectedTab);
+
+  /**
+   * Updates the selected tab state and saves it to credentials.
+   * @param tab - The tab option to select.
+   */
   const handleSelectedTabs = (tab: TabOption) => {
     setSelectedTab(tab);
-  };
+    selectNewTab(tab.id);
+  }
 
+  useEffect(() => {
+    setSelectedTab(lastSelectedTab);
+  } , [lastSelectedTab]);
+
+    /**
+   * Renders the sidebar with tab options grouped by categories.
+   */
   const tabsList = () => {
     return (
-      <Sidebar >
+      <Sidebar>
         <SidebarContent className="bg-zinc-300 text-xs">
           <div className="mt-4 mx-2">
             <SidebarTrigger />
           </div>
 
           {sidebarTabGroups.map((group, index) => (
-            <SidebarGroup key={`${group.groupHeader}-${index}`} >
+            <SidebarGroup key={`${group.groupHeader}-${index}`}>
               <SidebarGroupLabel>{group.groupHeader}</SidebarGroupLabel>
               <SidebarGroupContent className="space-y-1">
                 {group.groupTabs.map((tab, index) => (
-                  <SidebarMenuItem key={`${tab.id}-${index}`} className="list-none">
+                  <SidebarMenuItem
+                    key={`${tab.id}-${index}`}
+                    className="list-none"
+                  >
                     <SidebarMenuButton
                       asChild
                       isActive={tab.id === selectedTab.id}
@@ -60,7 +91,6 @@ export const TabProvider = ({ children }: TabProviderProps) => {
                             ? "text-black bg-slate-300"
                             : "text-white bg-zinc-600"
                         } text-xs`}
-       
                         key={tab.id}
                         value={tab.id}
                         onClick={() => handleSelectedTabs(tab)}
@@ -79,16 +109,16 @@ export const TabProvider = ({ children }: TabProviderProps) => {
   };
 
   return (
+
+
     <TabContext.Provider
       value={{
         selectedTab,
       }}
-    >
+      >
       {tabsList()}
       <div className="w-full h-full bg-zinc-100">
-        <div className="flex flex-col w-full h-full items-center pt-8">
-          {children}
-        </div>
+        <div className="flex flex-col  pt-8">{children}</div>
         <div className="fixed top-0 left-0 pt-4 px-2">
           <SidebarTrigger />
         </div>

@@ -1,8 +1,9 @@
-
 type ReadOnlyComponentsProps = {
   readOnlyProps: ReadOnlyViewProps;
   value: string;
 };
+
+  
 
 const ReadOnlyComponents: React.FC<ReadOnlyComponentsProps> = ({ readOnlyProps, value }) => {
 

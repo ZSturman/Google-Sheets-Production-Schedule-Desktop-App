@@ -1,12 +1,5 @@
 type LoadingState = "loading" | "error";
 
-
-type GanttDays = {
-  date: Date;
-  opening: Date;
-  closing: Date;
-}
-
 type GanttProductData = {
   start: Date;
   end: Date;
@@ -15,33 +8,41 @@ type GanttProductData = {
   description: string;
   customer: string;
   balanceQuantity: number;
-}
+};
 
-type GanttItem = {
-  start: Date;
-  end: Date;
-  due: Date;
-  title: string;
-  description: string;
-  customer: string;
-  balanceQuantity: number;
-}
+type ViewMode = "week" | "month";
 
+type AsNumnbers = {
+  notStartedOnTime: number;
+  notStartedLate: number;
+  inProgressOnTime: number;
+  inProgressLate: number;
+  completedBeforeDueDate: number;
+  completedAfterDueDate: number;
+};
 
+type GanttItem = ProductData &
+  AsNumnbers & {
+    dataStartDate: Date;
+    dataEndDate: Date;
+    dataDueDate: Date;
+  };
 
-type DataTableT =
-  | ProductData[]
-  | WorkCenterScheduleData[]
-  | LedgerData[];
+type GanttPage = {
+  startDate: Date;
+  endDate: Date;
+  startAsNumber: number;
+  endAsNumber: number;
+  data: GanttItem[];
+};
 
-type DataRowT =
-  | ProductData
-  | WorkCenterScheduleData
-  | LedgerData;
+type DataTableT = ProductData[] | WorkCenterScheduleData[] | LedgerData[];
+
+type DataRowT = ProductData | WorkCenterScheduleData | LedgerData;
 
 type EditingCell = {
   row: DataRowT;
-  newRow?: DataRowT
+  newRow?: DataRowT;
   columnId: string;
 };
 
@@ -98,7 +99,9 @@ type WorkCenterId =
   | "wc_pvc_vg"
   | "wc_punch_press"
   | "wc_loose_bw"
-  | "wc_ready_for_inspection";
+  | "wc_ready_for_inspection"
+  | "wc_archived"
+  | "wc_unassigned";
 
 type TabId =
   | "products"
@@ -113,9 +116,9 @@ type TabOption = {
   id: TabId;
   isWorkCenter?: boolean;
   name: string;
-  googleSheetName: string | null
-  columnDict: DataColumnDict | null
-  columnData: DataRowT | null
+  googleSheetName: string | null;
+  columnDict: DataColumnDict | null;
+  columnData: DataRowT | null;
 };
 
 type GoogleSheetHeader =
@@ -147,7 +150,6 @@ type GoogleSheetHeader =
   | "Start"
   | "End"
   | "On";
-
 
 type Conditionals =
   | "is"
@@ -234,7 +236,7 @@ type ChevronViewProps = BaseViewProps & {
   max?: number;
 };
 type NumberInputViewProps = BaseViewProps & {
-  placeholder: number,
+  placeholder: number;
   min?: number;
   max?: number;
 };
@@ -253,26 +255,35 @@ type DateTimeViewProps = BaseViewProps & {
     minute: "mm" | null;
   };
 };
-type DateTimePickerViewProps = BaseViewProps & {
-  date: {
 
-    min?: Date;
-    max?: Date;
-    calendar?: "week" | "month" | "year";
-  }
+type TimeFromAmdTo = BaseViewProps & {
   time: {
     type?: "12" | "24";
     stepCount?: number;
     min?: number;
     max?: number;
-  }
+  };
+};
+
+type DateTimePickerViewProps = BaseViewProps & {
+  date: {
+    min?: Date;
+    max?: Date;
+    calendar?: "week" | "month" | "year";
+  };
+  time: {
+    type?: "12" | "24";
+    stepCount?: number;
+    min?: number;
+    max?: number;
+  };
 };
 
 type PriorityViewProps = BaseViewProps & {};
 type PopupViewProps = BaseViewProps & {
   content:
     | { calendar: DateTimePickerViewProps }
-    | { priority: PriorityViewProps }
+    | { priority: PriorityViewProps };
 };
 
 type DropdownViewProps = BaseViewProps & {
@@ -284,7 +295,6 @@ type ButtonViewProps = BaseViewProps & {
   labelIsValue: boolean;
   label: string;
 };
-
 
 type ViewProps =
   | TextViewProps
@@ -298,6 +308,7 @@ type ViewProps =
   | PopupViewProps
   | DropdownViewProps
   | ButtonViewProps
+  | TimeFromAmdTo
   | BaseViewProps;
 
 type ReadOnlyViewProps =
@@ -307,11 +318,11 @@ type ReadOnlyViewProps =
   | { datetime: DateTimeViewProps; styles?: UiStyles }
   | { hidden: BaseViewProps; styles?: UiStyles };
 
-type EditableViewProps = 
-| { chevron: ChevronViewProps; styles?: UiStyles }
-| { rowSelect: BaseViewProps; styles?: UiStyles }
-| { button: ButtonViewProps; styles?: UiStyles }
-| { checkbox: CheckboxViewProps; styles?: UiStyles }
+type EditableViewProps =
+  | { chevron: ChevronViewProps; styles?: UiStyles }
+  | { rowSelect: BaseViewProps; styles?: UiStyles }
+  | { button: ButtonViewProps; styles?: UiStyles }
+  | { checkbox: CheckboxViewProps; styles?: UiStyles };
 
 type EditingViewProps =
   | { textInput: TextInputViewProps; styles?: UiStyles }
@@ -319,7 +330,7 @@ type EditingViewProps =
   | { popup: PopupViewProps; styles?: UiStyles }
   | { dropdown: DropdownViewProps; styles?: UiStyles }
   | { checkbox: CheckboxViewProps; styles?: UiStyles }
-  
+  | { timeFromAndTo: TimeFromAmdTo; styles?: UiStyles };
 
 type DataColumnDict = {
   [key: string]: {
@@ -327,7 +338,7 @@ type DataColumnDict = {
     //sqlText: string;
     //sqlTableHeader: SqlTableHeader;
     googleSheetHeader: GoogleSheetHeader | null;
-    shortHeader?: string
+    shortHeader?: string;
     //toSqlConverter?: (value: string) => any;
     //toGoogleConverter?: (value: any) => string;
     columnDef?: DataColumnDefinition;
@@ -343,7 +354,7 @@ type DataColumnDefinition = {
   viewable?: boolean;
 };
 
-type HeaderFunctions = "checkbox" | "sort" | "hidden"
+type HeaderFunctions = "checkbox" | "sort" | "hidden";
 
 type CellValueStatus = {
   needsAttention: boolean;
@@ -362,12 +373,13 @@ type ValueSpecifics =
 
 type CellView = {
   view: {
-    readOnly: ReadOnlyViewProps | false
-    editable: {
-      default: EditableViewProps;
-      editing: EditingViewProps;
-    } | false
-    
+    readOnly: ReadOnlyViewProps | false;
+    editable:
+      | {
+          default: EditableViewProps;
+          editing: EditingViewProps;
+        }
+      | false;
   };
   value: ValueSpecifics & {
     nullable?: boolean;
@@ -390,20 +402,20 @@ type ProductData = {
   id: string;
   "Work Center": WorkCenter;
   "Job Number": string;
-  "Customer": string;
-  "Text": string;
-  "Quantity": number;
-  "Length": number;
+  Customer: string;
+  Text: string;
+  Quantity: number;
+  Length: number;
   "Requested Ship Date": Date;
   "Set Up": number;
-  "UPH": number;
-  "Cut": boolean
-  "Extrusion": boolean
-  "Ground": boolean;
-  "Drawing": string;
-  "Ends": EndsColumn;
+  UPH: number;
+  Cut: boolean;
+  Extrusion: boolean;
+  Ground: boolean;
+  Drawing: string;
+  Ends: EndsColumn;
   "Balance Quantity": number;
-  "Priority": number;
+  Priority: number;
   "Scheduled Start": Date;
   "Scheduled End": Date;
 };
@@ -416,30 +428,30 @@ type LedgerData = {
   [key: string]: any;
   id: string;
   "Work Center": WorkCenter;
-  "Date": Date;
-  "Weekday": string;
-  "Start": string;
-  "End": string;
+  Date: Date;
+  Weekday: string;
+  Start: string;
+  End: string;
 };
 
 type WorkCenterScheduleData = {
   [key: string]: any;
   id: string;
   "Date / Weekday / Holiday": string;
-  "UNASSIGNED": string;
+  UNASSIGNED: string;
   "SL 50": string;
   "SL 30": string;
-  "Q": string;
-  "Q2": string;
-  "R": string;
-  "A": string;
-  "X": string;
+  Q: string;
+  Q2: string;
+  R: string;
+  A: string;
+  X: string;
   "SECT #1": string;
-  "N": string;
-  "H": string;
+  N: string;
+  H: string;
   "Long press": string;
-  "Fabrication": string;
-  "PVC": string;
+  Fabrication: string;
+  PVC: string;
   "PVC VG": string;
   "Punch press": string;
   "Loose BW": string;
@@ -464,8 +476,7 @@ type WorkCenter =
   | "PVC VG"
   | "Punch press"
   | "Loose BW"
-  | "Ready for inspection";
+  | "Ready for inspection"
+  | "Archived";
 
-
-
-type EndsColumn = "_" | "Open" | "Lace" | "End" | "Long"
+type EndsColumn = "_" | "Open" | "Lace" | "End" | "Long";

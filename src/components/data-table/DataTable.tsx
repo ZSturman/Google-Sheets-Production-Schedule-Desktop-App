@@ -10,6 +10,7 @@ import {
 import { useTable } from "../../context/TableProvider";
 import { useData } from "../../context/DataProvider";
 
+
 const DataTable = () => {
   const { loading } = useData();
   const { table, renderTableOptions } = useTable();
@@ -22,14 +23,13 @@ const DataTable = () => {
     return <div>Table is not loaded</div>;
   }
 
+
   return (
     <div className="w-full h-full">
-      <div className="w-full flex items-center justify-between py-2">
-        <div>
-          <div className="flex flex-row justify-evenly items-center space-x-2">
+      <div className="flex  py-2">
+
             {renderTableOptions()}
-          </div>
-        </div>
+
       </div>
 
       <div className="rounded-md border border-gray-300">
@@ -56,12 +56,12 @@ const DataTable = () => {
           <TableBody>
             {table.getRowModel().rows.map((row, rowIndex) => (
               <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-                className={
-                  rowIndex % 2 === 0 ? "bg-gray-50" : "bg-white" // Alternate row background
-                }
-              >
+              key={row.id}
+              data-state={row.getIsSelected() && "selected"}
+              className={`${
+                rowIndex % 2 === 0 ? "bg-gray-150" : "bg-white"
+              } `} // Add dynamic status class
+            >
                 {row.getVisibleCells().map((cell: any) => (
                   <TableCell
                     key={cell.id}

@@ -83,7 +83,7 @@ type WorkCenterId =
   | 'punch_press'
   | 'loose_bw'
   | 'ready_for_inspection'
-  | 'unassigned';
+  | 'unassigned'
 
 export const workCenterIdMapping: Record<WorkCenterId, typeof workCentersList[number]> = {
   sl_50: "SL 50",

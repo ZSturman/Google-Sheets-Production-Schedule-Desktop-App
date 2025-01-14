@@ -1,23 +1,32 @@
+// App.tsx
+// Entry point for the application, sets up providers and renders the main content.
+
 import "./App.css";
 import { SidebarProvider } from "./components/ui/sidebar";
 import { TabProvider } from "./context/TabProvider";
 import SelectedTab from "./components/SelectedTabContainer";
 import { DataProvider } from "./context/DataProvider";
 
+/**
+ * Main application component.
+ * Sets up the providers for sidebar, tabs, and data context.
+ */
 function App() {
   return (
-    <div className="w-screen h-screen max-w-screen max-h-screen overflow-scroll">
-      <SidebarProvider>
-        <TabProvider>
-          <MainContent />
-        </TabProvider>
-      </SidebarProvider>
-    </div>
+    <SidebarProvider className="max-w-screen">
+      <TabProvider>
+        <MainContent />
+      </TabProvider>
+    </SidebarProvider>
   );
 }
 
 export default App;
 
+/**
+ * MainContent component.
+ * Encapsulates the primary content area and provides data context.
+ */
 const MainContent = () => {
   return (
     <DataProvider>

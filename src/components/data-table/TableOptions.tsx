@@ -20,7 +20,7 @@ import { Column } from "@tanstack/react-table";
 import NewProductForm from "../AddNewProductForm";
 
 const formMap: Record<string, React.ElementType> = {
-  Products: NewProductForm,
+  products: NewProductForm,
   // Add mappings for other tab names:
   // AnotherTab: AnotherTabForm,
 };

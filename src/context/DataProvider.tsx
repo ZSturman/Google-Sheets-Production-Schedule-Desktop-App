@@ -1,4 +1,6 @@
 // DataProvider.tsx
+// Manages data state and provides helper functions for data operations.
+
 import {
   createContext,
   useContext,
@@ -43,7 +45,7 @@ const initialState: DataState = {
 type DataContextType = {
   state: DataState;
   loading: boolean;
-  updatedAt: number; // Expose the timestamp
+  updatedAt: number;
   handleDataChange: (
     tab: TabOption,
     actionType: "add" | "update",
@@ -57,6 +59,9 @@ type DataContextType = {
   processSpecificWorkCenter: (workCenter: WorkCenter) => Promise<void>;
   refreshData: () => Promise<void>;
   unsavedChanges: boolean;
+  dataChanged: boolean;
+  moveToReady: (product: ProductData) => void;
+  // exportToCSV: (tab: TabId) => void;
 };
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -65,6 +70,11 @@ type DataProviderProps = {
   children: ReactNode;
 };
 
+/**
+ * DataProvider component.
+ * Handles global data state and exposes methods for managing data.
+ * @param {ReactNode} children - Components that consume the data context.
+ */
 export const DataProvider = ({ children }: DataProviderProps) => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
   const [state, setState] = useState<DataState>(initialState);
@@ -75,36 +85,36 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   const [workCenterSchedulesPopulated, setWorkCenterSchedulesPopulated] =
     useState(false);
 
-  const [productsDebounceTimer, setProductsDebounceTimer] = useState<
-    number | null
-  >(null);
-  const [
-    workCenterSchedulesDebounceTimer,
-    setWorkCenterSchedulesDebounceTimer,
-  ] = useState<number | null>(null);
-  const [ledgerDebounceTimer, setLedgerDebounceTimer] = useState<number | null>(
-    null
-  );
+  const [dataChanged, setDataChanged] = useState(false);
+
+  const [, setProductsDebounceTimer] = useState<number | null>(null);
+  const [, setWorkCenterSchedulesDebounceTimer] = useState<number | null>(null);
+  const [, setLedgerDebounceTimer] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(Date.now());
 
   const [unsavedChanges, setUnsavedChanges] = useState(false);
 
+  const moveToReady = (product: ProductData) => {
+    const updatedProduct = { ...product, work_center: "Ready for inspection" };
+    handleDataChange(productsTab, "update", updatedProduct);
+    refreshData();
+  };
 
-
+  /**
+   * Handles data changes by updating the state and committing changes to the database.
+   * @param tab - The tab option to modify.
+   * @param actionType - Action type ("add" or "update").
+   * @param data - Data to modify.
+   */
   const handleDataChange = async (
     tab: TabOption,
     actionType: "add" | "update",
     data: ProductData | WorkCenterScheduleData | LedgerData
   ) => {
-    // console.log(
-    //   productsDebounceTimer,
-    //   workCenterSchedulesDebounceTimer,
-    //   ledgerDebounceTimer
-    // );
-
     setUnsavedChanges(true);
+    setDataChanged(true);
 
     try {
       // Determine the relevant timer state and commit function
@@ -126,8 +136,10 @@ export const DataProvider = ({ children }: DataProviderProps) => {
           break;
       }
 
+      console.log(timerStateSetter, commitFunction);
+
       if (actionType === "add" || actionType === "update") {
-        //console.log("Is Add or Update");
+        console.log("Is Add or Update");
         if (!tab.columnDict) {
           console.error("Column dictionary not found for tab:", tab);
           return;
@@ -189,26 +201,9 @@ export const DataProvider = ({ children }: DataProviderProps) => {
           }
         }
       }
-
+      await commitFunction(); // Commit the relevant table
       setState(dataRef.current); // Updates the state
       setUpdatedAt(Date.now()); // Trigger a timestamp update
-
-      timerStateSetter((prevTimer) => {
-        if (prevTimer !== null) {
-          clearTimeout(prevTimer); // Clear the previous timer
-        }
-      
-        return window.setTimeout(async () => {
-          try {
-            await commitFunction(); // Commit the relevant table
-          } catch (error) {
-            console.error("Error committing data:", error);
-          } finally {
-            setUnsavedChanges(false); // Reset only after commit
-          }
-          timerStateSetter(null); // Reset the timer state
-        }, 3000); // Adjust debounce time as needed
-      });
     } catch (error) {
       console.error(`Error during ${actionType} operation:`, error);
     } finally {
@@ -263,7 +258,8 @@ export const DataProvider = ({ children }: DataProviderProps) => {
 
       const workCenterDB: WorkCenter[] = workCenters.filter(
         (workCenter) =>
-          workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
+          workCenter !== "Ready for inspection" &&
+          workCenter !== "UNASSIGNED"
       );
 
       const { products, workCenterSchedules } = dataRef.current;
@@ -298,8 +294,9 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       setState({ ...dataRef.current });
     } catch (err) {
       console.error("Error processing all work centers:", err);
-    } 
-  
+    }
+
+    setDataChanged(false);
   };
 
   const handleDeleteRows = async (
@@ -428,8 +425,6 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     );
   };
 
-
-
   const seedDefaults = async (
     tableDefaults: "Products" | "WorkCenterSchedules" | "Ledger"
   ) => {
@@ -509,7 +504,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
       setLoading(true);
       if (isInitialized.current) return;
       isInitialized.current = true;
-  
+
       try {
         for (const tab of allTabs) {
           if (tab.googleSheetName && tab.columnDict) {
@@ -520,11 +515,11 @@ export const DataProvider = ({ children }: DataProviderProps) => {
                 sheetIdentifier,
                 tab
               );
-  
+
               if (googleSheetData) {
                 const headers = googleSheetData[0];
                 const records = googleSheetData.slice(1);
-  
+
                 switch (tab.id) {
                   case "products":
                     if (records.length === 0) {
@@ -571,7 +566,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
               }
             } catch (error) {
               console.error("Error fetching Google Sheet data:", error);
-  
+
               // Create the missing Google Sheet with headers
               const defaultTable = Object.values(defaultTables).find(
                 (table) => table.sheetName === tab.googleSheetName
@@ -586,7 +581,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
                   defaultTable.sheetName,
                   defaultTable.headers
                 );
-  
+
                 // Retry fetching the data
                 const googleSheetData = await fetchGoogleSheetsData(
                   credentialsPath,
@@ -632,7 +627,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
         setLoading(false);
       }
     };
-  
+
     if (
       credentialsPath !== "loading" &&
       credentialsPath !== "error" &&
@@ -654,11 +649,11 @@ export const DataProvider = ({ children }: DataProviderProps) => {
             sheetIdentifier,
             tab
           );
-  
+
           if (googleSheetData) {
             const headers = googleSheetData[0];
             const records = googleSheetData.slice(1);
-  
+
             switch (tab.id) {
               case "products":
                 const transformedProductRecords = await transformRecords(
@@ -676,7 +671,8 @@ export const DataProvider = ({ children }: DataProviderProps) => {
                   records,
                   headers
                 );
-                dataRef.current.ledger = transformedLedgerRecords as LedgerData[];
+                dataRef.current.ledger =
+                  transformedLedgerRecords as LedgerData[];
                 break;
               case "work_center_schedules":
                 const transformedWorkCenterSchedulesRecords =
@@ -698,42 +694,36 @@ export const DataProvider = ({ children }: DataProviderProps) => {
     }
   };
 
-  // const contextValue = useMemo(
-  //   () => ({
-  //     state,
-  //     handleDataChange,
-  //     handleDeleteRows,
-  //     loading,
-  //     updatedAt,
-  //     processAllWorkCenters,
-  //     processSpecificWorkCenter,
-  //     refreshData,
-  //     unsavedChanges
-  //   }),
-  //   [state, loading, updatedAt, unsavedChanges]
-  // );
+  // TODO: Implement exportToCSV
 
-  const memoizedState = useMemo(() => state, [state]);
+  const contextValue = useMemo(
+    () => ({
+      state,
+      handleDataChange,
+      handleDeleteRows,
+      loading,
+      updatedAt,
+      processAllWorkCenters,
+      processSpecificWorkCenter,
+      refreshData,
+      unsavedChanges,
+      dataChanged,
+      moveToReady,
+    }),
+    [state, loading, updatedAt, unsavedChanges, dataChanged]
+  );
 
-const contextValue = {
-  state: memoizedState, // Only memoize the state
-  handleDataChange,
-  handleDeleteRows,
-  loading, // Directly use the latest values
-  updatedAt, // Directly use the latest values
-  processAllWorkCenters,
-  processSpecificWorkCenter,
-  refreshData,
-  unsavedChanges, // Directly use the latest values
-};
+  useEffect(() => {
+    console.log("Loading state changed in DataProvider:", loading);
+  }, [loading]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (loading) {
         console.log("Loading timeout reached, reloading...");
-        window.location.reload(); 
+        window.location.reload();
       }
-    }, 3000); 
+    }, 5000);
 
     return () => clearTimeout(timeout); // Cleanup on component unmount or loading state change
   }, [loading]);

@@ -3,13 +3,19 @@ import SettingsContainer from "./settings/SettingsContainer";
 import DataTable from "./data-table/DataTable";
 import { TableProvider } from "../context/TableProvider";
 import ErrorBoundary from "./ErrorBoundary";
-import CurrentProduct from "./CurrentProduct";
+//import CurrentProduct from "./CurrentProduct";
 import { GanttProvider } from "../context/GanttProvider";
 import { useCredentials } from "../context/CredentialProvider";
 import RefreshButton from "./RefreshButton";
-import { ChartCustomBar } from "./gantt/GanttChart";
-import { useData } from "../context/DataProvider";
-import { useEffect } from "react";
+import { ChartCustomBar } from "./GanttChart";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "../components/ui/accordion";
+import SingleProductInfo from "./SingleProductInfo";
+import ReadyForInspection from "./ReadyForInspection";
 
 const SelectedTab = () => {
   const { credentialsPath, sheetIdentifier } = useCredentials();
@@ -23,12 +29,7 @@ const SelectedTab = () => {
     return <SettingsContainer />;
   }
 
-  const { unsavedChanges, loading } = useData();
   const { selectedTab } = useTab();
-
-  useEffect(() => {
-    console.log("LOADING STATE SHOULD BE CHANGING HERE", loading);
-  }, [loading]);
 
   const renderSelectedTab = () => {
     if (selectedTab.id === "settings") {
@@ -36,18 +37,47 @@ const SelectedTab = () => {
     }
 
     if (selectedTab.isWorkCenter) {
+
+      if (selectedTab.id === "wc_ready_for_inspection") {
+        return (
+          <TableProvider key={selectedTab.id}>
+            <GanttProvider>
+              <ErrorBoundary>
+                <AccordionComp trigger="Ready" value="currentProduct" defaultOpen>
+                  <ReadyForInspection />
+                </AccordionComp>
+                <DataTable />
+              </ErrorBoundary>
+            </GanttProvider>
+          </TableProvider>
+        );
+      } else if (selectedTab.id === "wc_unassigned") {
+        <TableProvider key={selectedTab.id}>
+        <GanttProvider>
+          <ErrorBoundary>
+            <DataTable />
+          </ErrorBoundary>
+        </GanttProvider>
+      </TableProvider>
+
+      } else {
       return (
         <TableProvider key={selectedTab.id}>
           <GanttProvider>
             <ErrorBoundary>
-              <CurrentProduct />
 
-              <ChartCustomBar />
+              <AccordionComp trigger="In Progress" value="currentProduct" defaultOpen>
+                <SingleProductInfo />
+              </AccordionComp>
+              <AccordionComp trigger="Gantt Chart" value="gantt" defaultOpen>
+                <ChartCustomBar />
+              </AccordionComp>
               <DataTable />
             </ErrorBoundary>
           </GanttProvider>
         </TableProvider>
       );
+    }
     }
 
     if (selectedTab.id === "production_schedule") {
@@ -55,7 +85,9 @@ const SelectedTab = () => {
         <TableProvider key={selectedTab.id}>
           <GanttProvider>
             <ErrorBoundary>
-              {/*   <ChartCustomBar /> */}
+              <AccordionComp trigger="Gantt Chart" value="gantt">
+                <ChartCustomBar />
+              </AccordionComp>
               <DataTable />
             </ErrorBoundary>
           </GanttProvider>
@@ -73,14 +105,12 @@ const SelectedTab = () => {
   };
 
   return (
-    <div className="flex flex-col w-[95vw]  gap-4 py-4 ">
-      <div className="text-5xl">{selectedTab.name}</div>
+    <div className="flex flex-col  gap-4 px-2 py-4 ">
       <div>
-        {unsavedChanges && (
-          <div className="text-red-500">Unsaved changes</div>
-        )}
+        <RefreshButton />
       </div>
-      <RefreshButton />
+
+      <div className="text-xl">{selectedTab.name}</div>
 
       {renderSelectedTab()}
     </div>
@@ -88,3 +118,24 @@ const SelectedTab = () => {
 };
 
 export default SelectedTab;
+
+type AccordionCompProps = {
+  trigger: string;
+  value: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+};
+
+const AccordionComp: React.FC<AccordionCompProps> = ({ trigger, children, value, defaultOpen }) => {
+  return (
+    <Accordion type="single" collapsible className="border-2 px-4 py-2" defaultValue={defaultOpen ? value : undefined} >
+
+      <AccordionItem value={value}>
+        <AccordionTrigger className="justify-start px-2">
+          {trigger}
+        </AccordionTrigger>
+        <AccordionContent>{children}</AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+};

@@ -18,38 +18,9 @@ import {
   differenceInCalendarMonths,
 } from "date-fns";
 import { useTab } from "./TabProvider";
-import { workCentersList } from "../data/lists";
-import { Button } from "../components/ui/button";
-
-type ViewMode = "week" | "month";
-
-type AsNumnbers = {
-  notStartedOnTime: number;
-  notStartedLate: number;
-  inProgressOnTime: number;
-  inProgressLate: number;
-  completedBeforeDueDate: number;
-  completedAfterDueDate: number;
-  //dueIndicator: number
-};
-
-type GanttItem = ProductData &
-  AsNumnbers & {
-    dataStartDate: Date;
-    dataEndDate: Date;
-    dataDueDate: Date;
-  };
-
-type GanttPage = {
-  startDate: Date;
-  endDate: Date;
-  startAsNumber: number;
-  endAsNumber: number;
-  data: GanttItem[];
-};
+import { useTable } from "./TableProvider";
 
 type GanttContextType = {
-  //ganttDays: GanttDays[];
   ganttProducts: ProductData[];
   viewMode: ViewMode;
   toggleViewMode: () => void;
@@ -58,7 +29,6 @@ type GanttContextType = {
   selectedPage: number;
   weeksData: GanttPage[];
   monthsData: GanttPage[];
-  productionScheduleGanttOptions: () => ReactNode;
 };
 
 const GanttContext = createContext<GanttContextType | undefined>(undefined);
@@ -70,13 +40,12 @@ type GanttProviderProps = {
 export const GanttProvider = ({ children }: GanttProviderProps) => {
   const { state, loading, updatedAt } = useData();
   const { selectedTab } = useTab();
+  const { jobNumberQuery, workCenterQuery } = useTable();
   const [ganttProducts, setGanttProducts] = useState<ProductData[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [selectedPage, setSelectedPage] = useState<number>(0);
   const [weeksData, setWeeksData] = useState<GanttPage[]>([]);
   const [monthsData, setMonthsData] = useState<GanttPage[]>([]);
-  const [showWorkCenter, setShowWorkCenter] = useState<WorkCenter[]>(workCentersList as WorkCenter[]);
-  const [availableWorkCenters, setAvailableWorkCenters] = useState<WorkCenter[]>([]);
 
   useEffect(() => {
     if (!loading) {
@@ -190,9 +159,7 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
             setMonthsData(monthsData);
           }
         } else {
-          const data = state.products
-   
-          .sort((a, b) => {
+          const data = state.products.sort((a, b) => {
             const aaPriority = parseInt(a["priority"]);
             const bbPriority = parseInt(b["priority"]);
             return aaPriority - bbPriority;
@@ -200,11 +167,6 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
 
           if (data.length > 0) {
             setGanttProducts(data);
-
-            const availWorkCenters = data.map((row) => row["work_center"]);
-            const uniqueWorkCenters = [...new Set(availWorkCenters)];
-            setAvailableWorkCenters(uniqueWorkCenters);
-
 
             // Update minDate and maxDate
             const dates: Date[] = data.flatMap((item) => [
@@ -241,21 +203,36 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
                 const startDate = addWeeks(adjustedMinDateForWeeks, i);
                 const endDate = endOfWeek(
                   addWeeks(adjustedMinDateForWeeks, i),
-                  { weekStartsOn: 0 }
+                  {
+                    weekStartsOn: 0,
+                  }
                 );
 
-                // Include all products regardless of overlap
-                const dataForPage = data.map((row) => ({
+                // Filter the data based on selected work centers
+                let filteredData = data
+
+                if (jobNumberQuery.length > 0) {
+                  filteredData = filteredData.filter((row) =>
+                    row["job_number"]
+                      .toLowerCase()
+                      .includes(jobNumberQuery.toLowerCase())
+                  );
+                }
+
+                if (workCenterQuery.length > 0) {
+                  filteredData = filteredData.filter((row) =>
+                    row["work_center"]
+                      .toLowerCase()
+                      .includes(workCenterQuery.toLowerCase())
+                  );
+                }
+
+                const dataForPage = filteredData.map((row) => ({
                   ...row,
                   dataStartDate: new Date(row["scheduled_start"]),
                   dataEndDate: new Date(row["scheduled_end"]),
                   dataDueDate: new Date(row["requested_ship_date"]),
-                  ...getDatesAsNumbers(
-                    startDate,
-                    endDate,
-
-                    row
-                  ),
+                  ...getDatesAsNumbers(startDate, endDate, row),
                 }));
 
                 return {
@@ -278,11 +255,27 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
                 const endDate = endOfMonth(
                   addMonths(adjustedMinDateForMonths, i)
                 );
-                const startAsNumber = 0;
-                const endAsNumber = endDate.getTime() - startDate.getTime();
 
-                // Include all products regardless of overlap
-                const dataForPage = data.map((row) => ({
+                // Filter the data based on selected work centers
+                let filteredData = data
+
+                if (jobNumberQuery.length > 0) {
+                  filteredData = filteredData.filter((row) =>
+                    row["job_number"]
+                      .toLowerCase()
+                      .includes(jobNumberQuery.toLowerCase())
+                  );
+                }
+
+                if (workCenterQuery.length > 0) {
+                  filteredData = filteredData.filter((row) =>
+                    row["work_center"]
+                      .toLowerCase()
+                      .includes(workCenterQuery.toLowerCase())
+                  );
+                }
+
+                const dataForPage = filteredData.map((row) => ({
                   ...row,
                   dataStartDate: new Date(row["scheduled_start"]),
                   dataEndDate: new Date(row["scheduled_end"]),
@@ -293,8 +286,8 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
                 return {
                   startDate,
                   endDate,
-                  startAsNumber,
-                  endAsNumber,
+                  startAsNumber: 0,
+                  endAsNumber: endDate.getTime() - startDate.getTime(),
                   data: dataForPage,
                 };
               }
@@ -305,28 +298,9 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
         }
       }
     }
-  }, [state, selectedTab, updatedAt, loading]);
+  }, [state, selectedTab, updatedAt, loading, jobNumberQuery, workCenterQuery]);
 
-  const productionScheduleGanttOptions = () => {
-    if (selectedTab.name !== "Production Schedule") return null
 
-    const onWorkCenterClick = (workCenter: WorkCenter) => {
-      if (showWorkCenter.includes(workCenter)) {
-        setShowWorkCenter((prev) => prev.filter((wc) => wc !== workCenter));
-      } else {
-        setShowWorkCenter((prev) => [...prev, workCenter]);
-      }
-    }
-    return (
-      <div className="flex flex-row pb-1 gap-1">
-        {availableWorkCenters.map((workCenter) => (
-          <Button key={workCenter} onClick={() => onWorkCenterClick(workCenter)} className={`${showWorkCenter.includes(workCenter) ? "bg-zinc-800 text-white hover:bg-zinc-700 hover:text-white" : "bg-white border-zinc-800 border-2 text-black hover:bg-zinc-800 hover:text-white"}`}>
-            <h2>{workCenter}</h2>
-          </Button>
-        ))}
-      </div>
-    );
-  };
 
   enum DataDates {
     start,
@@ -738,7 +712,7 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
   return (
     <GanttContext.Provider
       value={{
-        //ganttDays,
+
         ganttProducts,
         viewMode,
         toggleViewMode,
@@ -747,7 +721,6 @@ export const GanttProvider = ({ children }: GanttProviderProps) => {
         selectedPage,
         weeksData,
         monthsData,
-        productionScheduleGanttOptions
       }}
     >
       {children}

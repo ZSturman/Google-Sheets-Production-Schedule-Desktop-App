@@ -115,7 +115,7 @@ const CellAsChevronAndNumberInput: React.FC<
             <BsChevronCompactUp />
           </button>
           <Button onClick={() => setIsEditing(true)} className="bg-transparent text-black hover:bg-transparent hover:text-black shadow-none border-1px border-black">
-            {currentValue || "Click to edit"}
+            {currentValue || "0"}
           </Button>
           <button onClick={decrementValue}  className="bg-transparent text-black hover:bg-transparent hover:text-black shadow-none py-0  w-full flex items-center justify-center">
             <BsChevronCompactDown />

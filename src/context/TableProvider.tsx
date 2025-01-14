@@ -38,11 +38,15 @@ import {
   ViewOptions,
 } from "../components/data-table/TableOptions";
 import { v4 as uuidv4 } from "uuid";
+import CellAsPopupTwoTimePickers from "../components/data-table/CellAsPopupTwoTimePickers";
 
 type TableContextType = {
   table: ReactTable<DataRowT> | null;
   renderTableOptions: () => ReactNode;
   selectedData: DataRowT[];
+  deleteFromLocalData: (deletedRows: DataRowT[]) => void;
+  jobNumberQuery: string;
+  workCenterQuery: string;
 };
 
 const TableContext = createContext<TableContextType | undefined>(undefined);
@@ -59,11 +63,24 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     handleDataChange,
     handleDeleteRows,
     processAllWorkCenters,
-    refreshData
+    refreshData,
+    dataChanged,
   } = useData();
+
   const { selectedTab } = useTab();
 
   const [selectedData, setSelectedData] = useState<DataRowT[]>([]);
+  const [newRowAdded, setNewRowAdded] = useState<boolean>(false);
+
+  const [jobNumberQuery, setJobNumberQueryQuery] = useState<string>("");
+  const [workCenterQuery, setWorkCenterQuery] = useState<string>("");
+
+  useEffect(() => {
+    if (newRowAdded) {
+      refreshData();
+      setNewRowAdded(false);
+    }
+  }, [newRowAdded, refreshData]);
 
   useEffect(() => {
     if (!loading) {
@@ -75,7 +92,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
           data = state.ledger;
         } else {
           if (selectedTab.isWorkCenter) {
-            
             data = state.products
               .filter((row) => row["work_center"] === selectedTab.name)
               .sort((a, b) => {
@@ -89,11 +105,16 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                 }
                 return 0;
               });
-              
           } else {
             data = state.products;
           }
         }
+        data = data.filter(
+          (row) =>
+            row["work_center"] !== "Archived" ||
+            selectedTab.id === "wc_archived"
+        );
+
         setSelectedData(data);
       }
     }
@@ -125,9 +146,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
       try {
         // Simulate an async operation (e.g., API call)
         await handleDataChange(selectedTab, "add", newRow);
-
-        console.log("Row added successfully!");
-        await refreshData();
       } catch (error) {
         console.error("Failed to add new row:", error);
 
@@ -135,9 +153,11 @@ export const TableProvider = ({ children }: TableProviderProps) => {
         setSelectedData((prevData) =>
           prevData.filter((row) => row.id !== newRow.id)
         );
+      } finally {
+        setNewRowAdded(true);
       }
     },
-    [handleDataChange, selectedTab]
+    [handleDataChange, selectedTab, refreshData]
   );
 
   const deleteFromLocalData = useCallback(
@@ -174,7 +194,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
         const { headerFunction, cell, enableHiding, enableSorting } =
           columnDef || {};
 
-
         const columnId = id || "unknown_column";
 
         const updateCellValue = (row: any, column: any, newValue: string) => {
@@ -192,23 +211,21 @@ export const TableProvider = ({ children }: TableProviderProps) => {
               case "sort":
                 const handleSortClick = () => {
                   const currentSort = context.column.getIsSorted(); // Get current sort state
-                  let nextSort;
+                  let desc;
 
                   if (!currentSort) {
-                    console.log("Not sorted");
-                    nextSort = "asc"; // If not sorted, sort ascending
+                    desc = false;
                   } else if (currentSort === "asc") {
-                    nextSort = "desc"; // If ascending, sort descending
+                    desc = true;
                   } else if (currentSort === "desc") {
-                    nextSort = false; // Clear sorting
+                    desc = false;
                   }
-                  context.column.toggleSorting(nextSort as any);
+                  context.column.toggleSorting(desc);
                 };
 
                 return (
                   <button
                     className="bg-transparent text-zinc-700 shadow-none p-1"
-                    
                     onClick={handleSortClick}
                   >
                     {shortHeader ? shortHeader : googleSheetHeader}
@@ -217,12 +234,13 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                   </button>
                 );
               default:
-                return <span>{shortHeader ? shortHeader :googleSheetHeader}</span>;
+                return (
+                  <span>{shortHeader ? shortHeader : googleSheetHeader}</span>
+                );
             }
           },
           cell: ({ row, column }) => {
             if (!cell || !cell.view) return null;
-
 
             if (headerFunction === "checkbox") {
               return (
@@ -232,8 +250,22 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                   onChange={() => row.toggleSelected()}
                 />
               );
-            } 
+            }
 
+            if (selectedTab.id === "wc_archived") {
+              const viewProps: ReadOnlyViewProps = cell.view.readOnly
+                ? cell.view.readOnly
+                : {
+                    text: {},
+                  };
+
+              return (
+                <ReadOnlyComponents
+                  readOnlyProps={viewProps}
+                  value={row.original[column.id]}
+                />
+              );
+            }
 
             if (cell.view.editable) {
               const handleCellUpdate = (newValue: string) => {
@@ -302,16 +334,6 @@ export const TableProvider = ({ children }: TableProviderProps) => {
               }
 
               if ("popup" in cell.view.editable.editing) {
-                let buttonProps: ButtonViewProps;
-                if ("button" in cell.view.editable.default) {
-                  buttonProps = cell.view.editable.default.button;
-                } else {
-                  buttonProps = {
-                    labelIsValue: true,
-                    label: "Select",
-                  };
-                }
-
                 if ("calendar" in cell.view.editable.editing.popup.content) {
                   return (
                     <CellAsPopupDateTimePicker
@@ -322,6 +344,17 @@ export const TableProvider = ({ children }: TableProviderProps) => {
                     />
                   );
                 }
+              }
+
+              if ("timeFromAndTo" in cell.view.editable.editing) {
+                return (
+                  <CellAsPopupTwoTimePickers
+                    value={row.original[column.id]}
+                    onSave={(newValue) => {
+                      updateCellValue(row, column, newValue);
+                    }}
+                  />
+                );
               }
 
               return (
@@ -411,20 +444,63 @@ export const TableProvider = ({ children }: TableProviderProps) => {
     );
   };
 
-// TableProvider.tsx
+  useEffect(() => {
+    setJobNumberQueryQuery("");
+    setWorkCenterQuery("");
+  }, [selectedTab]);
 
-const renderProductionScheduleTableOptions = () => {
-  if (!table) return null;
+  // TableProvider.tsx
 
-  return (
-    <div className="flex flex-row gap-2">
-      <Button onClick={processAllWorkCenters} >
-        Process All Work Centers
-      </Button>
-      <ViewOptions columns={table.getAllColumns()} />
-    </div>
-  );
-};
+  const renderProductionScheduleTableOptions = () => {
+    if (!table) return null;
+
+    const jobNumberFilterValue = table
+      .getColumn("job_number")
+      ?.getFilterValue() as string;
+
+    const workCenterFilterValue = table
+      .getColumn("work_center")
+      ?.getFilterValue() as string;
+
+    const handleChange = (value: string, col: "job_number" | "work_center") => {
+      table.getColumn(col)?.setFilterValue(value);
+      if (col === "job_number") {
+        setJobNumberQueryQuery(value);
+      }
+      if (col === "work_center") {
+        setWorkCenterQuery(value);
+      }
+    };
+
+    return (
+      <div className="flex flex-row gap-2 items-start justify-start w-full">
+        <ViewOptions columns={table.getAllColumns()} />
+
+        <FilterInput
+          placeholder="Filter Job Number..."
+          value={jobNumberFilterValue ?? ""}
+          onChange={(value) => handleChange(value, "job_number")}
+        />
+
+        <FilterInput
+          placeholder="Filter Work Center..."
+          value={workCenterFilterValue ?? ""}
+          onChange={(value) => handleChange(value, "work_center")}
+        />
+
+        <Button
+          onClick={processAllWorkCenters}
+          className={`${
+            !dataChanged
+              ? "bg-transparent border-2 border-zinc-400 text-zinc-500 hover:bg-zinc-300 hover:text-black"
+              : " bg-black text-white"
+          }  w-full`}
+        >
+          Process All Work Centers
+        </Button>
+      </div>
+    );
+  };
 
   const renderProductsTableOptions = () => {
     if (!table) return null;
@@ -433,14 +509,27 @@ const renderProductionScheduleTableOptions = () => {
     const selectedRows = table.getSelectedRowModel().rows;
 
     const jobNumberFilterValue = table
-      .getColumn("job_number")?.getFilterValue() as string;
+      .getColumn("job_number")
+      ?.getFilterValue() as string;
+
+    const workCenterFilterValue = table
+      .getColumn("work_center")
+      ?.getFilterValue() as string;
+
+      const handleChange = (value: string, col: "job_number" | "work_center") => {
+        table.getColumn(col)?.setFilterValue(value);
+        if (col === "job_number") {
+          setJobNumberQueryQuery(value);
+        }
+        if (col === "work_center") {
+          setWorkCenterQuery(value);
+        }
+      };
 
     const handleConfirmDelete = (confirmed: boolean) => {
       if (confirmed) {
         deleteFromLocalData(selectedRows.map((row) => row.original));
         table.setRowSelection({});
-      } else {
-        console.log("Delete operation cancelled.");
       }
     };
 
@@ -452,7 +541,7 @@ const renderProductionScheduleTableOptions = () => {
         </div>
         <div className="flex flex-row gap-3">
           <AddOption
-            tabName={selectedTab.name}
+            tabName={selectedTab.id}
             onSubmit={(newRow) => addToLocalData(newRow)}
           />
 
@@ -465,18 +554,33 @@ const renderProductionScheduleTableOptions = () => {
           <FilterInput
             placeholder="Filter Job Number..."
             value={jobNumberFilterValue ?? ""}
-            onChange={(value) =>
-              table.getColumn(
-                "job_number"
-              )?.setFilterValue(value)
-            }
+            onChange={(value) => handleChange(value, "job_number")}
+          />
+
+          <FilterInput
+            placeholder="Filter Work Center..."
+            value={workCenterFilterValue ?? ""}
+            onChange={(value) => handleChange(value, "work_center")}
           />
 
           <ViewOptions columns={table.getAllColumns()} />
+          <Button
+            onClick={processAllWorkCenters}
+            className={`${
+              !dataChanged
+                ? "bg-transparent border-2 border-zinc-400 text-zinc-500 hover:bg-zinc-300 hover:text-black"
+                : " bg-black text-white"
+            }  w-full`}
+          >
+            Process All Work Centers
+          </Button>
         </div>
         <div>
-          Note: When adding a new product, there may be a delay before the data is populated correctly. 
-          <br />If this happens, please press the 'Refresh' button to get the updated data from Google Sheets. 
+          Note: When adding a new product, there may be a delay before the data
+          is populated correctly.
+          <br />
+          If this happens, please press the 'Refresh' button to get the updated
+          data from Google Sheets.
         </div>
       </div>
     );
@@ -497,7 +601,9 @@ const renderProductionScheduleTableOptions = () => {
   };
 
   return (
-    <TableContext.Provider value={{ table, renderTableOptions, selectedData }}>
+    <TableContext.Provider
+      value={{ table, renderTableOptions, selectedData, jobNumberQuery, workCenterQuery, deleteFromLocalData }}
+    >
       {children}
     </TableContext.Provider>
   );

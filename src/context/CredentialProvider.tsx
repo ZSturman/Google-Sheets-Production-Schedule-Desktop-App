@@ -17,6 +17,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { withTimeout } from "../lib/withTimeout";
 import { invoke } from "@tauri-apps/api/core";
 import { join, appDataDir } from "@tauri-apps/api/path";
+import { allTabs } from "../data/tabs";
 
 type CredentialsType = {
   credentialsPath: string | LoadingState;
@@ -31,6 +32,8 @@ type CredentialsType = {
   deleteCredentials: () => void;
   ensureCredentialsFileExists: () => Promise<string>;
   refresh: () => void;
+  selectNewTab: (tabId: TabId) => void,
+  lastSelectedTab: TabOption
 };
 
 // Default values for context
@@ -46,6 +49,8 @@ const defaultCredentials: CredentialsType = {
   deleteCredentials: () => {},
   ensureCredentialsFileExists: async () => "",
   refresh: () => {},
+  selectNewTab: () => {},
+  lastSelectedTab: allTabs[0]
 };
 
 // Create Context
@@ -64,12 +69,14 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
   const [appDirectoryPath, setAppDirectoryPath] = useState<
     string | LoadingState
   >("loading");
+  const [lastSelectedTab, setLastSelectedTab] = useState<TabOption>(allTabs[0]);
   const [store, setStore] = useState<Store | null>(null);
 
   const STORE = {
     STORE_NAME: "rods-sheets.Credentials.json",
     IDENTIFIERS: "identifiers",
     LAST_USED_IDENTIFIER: "selectedIdentifier",
+    LAST_SELECTED_TAB: "lastSelectedTab",
   };
 
   const CREDENTIALS_FILENAME = "credentials.json";
@@ -115,6 +122,7 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (store) {
+      checkForLastSelectedTab();
       checkForIdentifiers();
     }
   }, [store]);
@@ -202,6 +210,27 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const checkForLastSelectedTab = async () => {
+    if (!store) {
+      return;
+    }
+
+    const lastSelectedTab = await store.get<string>(STORE.LAST_SELECTED_TAB);
+
+    if (!lastSelectedTab) {
+      setLastSelectedTab(allTabs[0]);
+      return;
+    }
+
+    const selectedTab = allTabs.find((tab) => tab.id === lastSelectedTab);
+    if (!selectedTab) {
+      setLastSelectedTab(allTabs[0]);
+      return;
+    }
+
+    setLastSelectedTab(selectedTab);
+  }
+
   const checkForIdentifiers = async () => {
     if (!store) {
       return;
@@ -286,6 +315,15 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const selectNewTab = async (tabId: TabId) => {
+    const selectedTab = allTabs.find((tab) => tab.id === tabId);
+    if (!selectedTab) return;
+    setLastSelectedTab(selectedTab);
+    if (!store) return;
+    await store.set(STORE.LAST_SELECTED_TAB, tabId as string);
+    await store.save();
+  }
+
   const addIdentifier = async (identifier: string) => {
     if (!store) return;
 
@@ -349,6 +387,8 @@ export const CredentialsProvider = ({ children }: { children: ReactNode }) => {
         deleteCredentials,
         ensureCredentialsFileExists,
         refresh,
+        selectNewTab,
+        lastSelectedTab
       }}
     >
       <div>{children}</div>

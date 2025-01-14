@@ -5,14 +5,6 @@ import {
 } from "./lists";
 import { removeAllWhiteSpace } from "../utils/regexFuncs";
 
-/* 
-
-Google SHeet Values to copy in case they get deleted
-
-Job Number	Customer	Text	Work Center	Quantity	Length	Production Quantity	Balance Quantity	Requested Ship Date	Requested Ship Time	Set Up	UPH	Cut	Extrusion	Ground	Drawing	Ends	Priority	Scheduled Start	Scheduled End 
-
-*/
-
 const renderBaseProductColumnDict = (
   tab:
     | "products"
@@ -463,6 +455,7 @@ const renderBaseProductColumnDict = (
                   minute: "mm",
                 },
               },
+
             },
             editable: isProductsTab
               ? {
@@ -670,7 +663,7 @@ const renderBaseProductColumnDict = (
 
 export const productsTab: TabOption = {
   id: "products",
-  name: "Products",
+  name: "Add/ Edit Products",
   //googleSheetName: "google",
   //sqlTableName: "Products",
   googleSheetName: "Products",
@@ -691,7 +684,26 @@ const generateColumnDict = (workCenters: string[]) => {
         cell: {
           view: {
             readOnly: { text: {} },
-            editable: false,
+            editable: {
+           
+                default: {
+                  button: {
+                    labelIsValue: true,
+                    label: "Select Date and Time...",
+                  },
+                },
+                editing: {
+                  timeFromAndTo: {
+                    time: {
+                      type: "24",
+                      stepCount: 1,
+                      min: 0,
+                      max: 1440,
+                    }
+                  }
+                },
+              }
+            
           },
           value: {
             type: "text",
@@ -928,11 +940,11 @@ export const allTabs = [
 export const sidebarTabGroups: SidebarTabGroup[] = [
   {
     groupHeader: "Main",
-    groupTabs: [productionScheduleTab, productsTab],
+    groupTabs: [productionScheduleTab, productsTab, settingsTab, workCenterSchedulesTab],
   },
   { groupHeader: "Work Centers", groupTabs: workCenterTabs },
-  {
+/*   {
     groupHeader: "Settings",
-    groupTabs: [settingsTab, workCenterSchedulesTab, ledgersTab ],
-  },
+    groupTabs: [workCenterSchedulesTab, ledgersTab ],
+  }, */
 ];
