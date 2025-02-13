@@ -16,11 +16,13 @@ This app streamlines production scheduling by managing all schedule information 
 
 ## Installation & Setup
 
-1. Download the Application (COMING SOON. Please contact me for early access.)
+1. Download the Application 
 
-    - Go to the Releases section on GitHub (or a direct link from your website).
-    - Pick the installer or bundle matching your operating system (macOS, Windows, or Linux).
-    - Install as you would any desktop software.
+    - This application is designed for company-specific use, with builds available on their hardware. However, the source code is fully open for anyone to use and modify.
+    - To get started, clone the repository, install the dependencies, and build the app following the instructions below.
+    - To customize the app for your specific needs:
+        - Edit src/data/tabs.tsx to adjust the tabs configuration to match your Google Sheet columns.
+        - Modify src/data/defaults.tsx to align with your data. These changes will update how initial Google Sheets are generated and structured in the app.
 
 2. Obtain Google Sheets Credentials
 
@@ -38,15 +40,6 @@ This app streamlines production scheduling by managing all schedule information 
 
 That’s it. You can now view and manage your production schedule.
 
-## Installation & Setup
-1. **Download the Application**  
-   Visit the Releases section on GitHub to download the installer for your OS.
-2. **Obtain Google Sheets Credentials**  
-   Follow the instructions in [Managing Google Sheets Credentials](#managing-google-sheets-credentials).
-3. **Enter Spreadsheet ID**  
-   Provide the Google Spreadsheet ID in the app.
-4. **Start Scheduling**  
-   Manage your schedules with real-time updates.
 
 ## Developer Setup Instructions
 **Prerequisites:** Node.js (16+), Yarn/npm, and the Rust toolchain.
