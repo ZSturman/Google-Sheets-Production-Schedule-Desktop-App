@@ -1,30 +1,110 @@
-# Rod's Sheets
+# Production Scheduling Desktop App
 
-## A production scheduling tool for a small manufacturing company that produces custom products. This app connecting to Google Sheets to manage orders, products, and production schedules.
+Production Scheduling Desktop App leverages Google Sheets as a database to streamline production scheduling with cross-platform support, interactive Gantt charts, and role-based access control.
 
-### Description
+## Overview
+This app streamlines production scheduling by managing all schedule information in one Google Sheet and displaying progress with interactive Gantt charts.
 
-This app is a production scheduling tool for a small manufacturing company that produces custom products. It connects to Google Sheets to manage orders, products, and production schedules. The app is built with React and Tauri. The app uses Google Sheets as a database to store orders, products, and production schedules. The app uses the Google Sheets API to read and write data to the Google Sheets.
+## Features
+- **Cross-Platform:** Runs on macOS, Windows, and Linux.
+- **Google Sheets Integration:** No additional database needed.
+- **Scheduling & Gantt Charts:** Auto generates visual timelines.
+- **Secure Authentication:** Uses a secure JSON key from Google Cloud.
+- **User Role Management:** Customizes view and access based on roles.
+- **Flexibility:** Minimal UI with optional extensions.
 
-### Features
 
-- **Dashboard**: A summary of the current production schedule.
-- **Orders**: A list of all orders.
-- **Products**: A list of all products.
-- **Schedule**: A list of all scheduled production.
-- **Settings**: A list of all settings.
+## Installation & Setup
 
-### To Do
+1. Download the Application (COMING SOON. Please contact me for early access.)
 
-- Eventually I want the ability to have more custimizable settings for users with different needs.
-- I want to add the ability to have multiple users with different permissions.
-- I want to add the ability to have multiple production schedules.
-- I want to add the ability to have multiple production lines.
-- The gantt chart functionality is not very good. I want to improve it.
-- The state management isn't handled great yet and the feedback to the user when things are being pusbed to the Google Sheet is not great. I want to improve this.
+    - Go to the Releases section on GitHub (or a direct link from your website).
+    - Pick the installer or bundle matching your operating system (macOS, Windows, or Linux).
+    - Install as you would any desktop software.
 
-### Installation
+2. Obtain Google Sheets Credentials
 
-1. Clone the repository.
-2. Run `npm install` to install the dependencies.
-3. Run `npm run tauri dev` to start the app.
+    - Follow the instructions below in Managing Your Google Sheets Credentials to get a .json file from Google Cloud.
+    - Drag and drop that file into the app or paste its contents into the appropriate screen.
+
+3. Enter Spreadsheet ID
+
+    - Inside the app, once credentials are loaded, provide the ID of the Google Spreadsheet you want to use.
+    - Ensure that the service account email address (found in your .json file) has permission to edit the Google Sheet.
+
+4. Start Scheduling
+
+    - The app will load your Sheet data, show you a table of jobs, and generate Gantt charts.
+
+That’s it. You can now view and manage your production schedule.
+
+## Installation & Setup
+1. **Download the Application**  
+   Visit the Releases section on GitHub to download the installer for your OS.
+2. **Obtain Google Sheets Credentials**  
+   Follow the instructions in [Managing Google Sheets Credentials](#managing-google-sheets-credentials).
+3. **Enter Spreadsheet ID**  
+   Provide the Google Spreadsheet ID in the app.
+4. **Start Scheduling**  
+   Manage your schedules with real-time updates.
+
+## Developer Setup Instructions
+**Prerequisites:** Node.js (16+), Yarn/npm, and the Rust toolchain.
+
+Clone the repository
+
+```bash
+git clone https://github.com/ZSturman/rods-sheets_v2.git
+```
+
+Install dependencies
+
+``` bash
+npm install
+```
+
+Build the app
+
+```     bash
+npm run tauri build
+```
+
+Run in development mode
+
+``` bash
+npm run tauri dev
+```
+
+_Edit the React frontend in the src directory or adjust Tauri configuration in tauri.conf.json as needed._
+
+## Project Structure
+- **src-tauri:** Rust-based backend for the desktop wrapper.
+- **src:** React frontend for the user interface.
+
+## Using the App
+- View, edit, and filter production jobs.
+- See real-time updates in Gantt charts.
+- Export Gantt charts as images or PDFs.
+
+## Managing Google Sheets Credentials
+1. Visit Google Cloud Console.
+2. Create/select a project and enable the Google Sheets API.
+3. Create a service account and download the JSON key.
+4. Securely import the key to the app.
+
+## Work Centers & Schedules
+The app groups production jobs by work center for easy filtering and tracking.
+
+## Further Customization
+- Add custom columns for extra job details.
+- Modify Gantt chart behavior.
+- Implement additional user roles and permissions.
+- Enhance the UI with new components.
+
+## Contributing
+- Fork the repository and create a new branch.
+- Make your changes, test them, and submit a pull request following our code style.
+- Be respectful and constructive.
+
+## License
+This project is licensed under the MIT License. 

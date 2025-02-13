@@ -664,8 +664,6 @@ const renderBaseProductColumnDict = (
 export const productsTab: TabOption = {
   id: "products",
   name: "Add/ Edit Products",
-  //googleSheetName: "google",
-  //sqlTableName: "Products",
   googleSheetName: "Products",
   columnDict: renderBaseProductColumnDict("products"),
   columnData: null,
@@ -943,8 +941,4 @@ export const sidebarTabGroups: SidebarTabGroup[] = [
     groupTabs: [productionScheduleTab, productsTab, settingsTab, workCenterSchedulesTab],
   },
   { groupHeader: "Work Centers", groupTabs: workCenterTabs },
-/*   {
-    groupHeader: "Settings",
-    groupTabs: [workCenterSchedulesTab, ledgersTab ],
-  }, */
 ];

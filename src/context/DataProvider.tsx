@@ -258,8 +258,7 @@ export const DataProvider = ({ children }: DataProviderProps) => {
 
       const workCenterDB: WorkCenter[] = workCenters.filter(
         (workCenter) =>
-          workCenter !== "Ready for inspection" &&
-          workCenter !== "UNASSIGNED"
+          workCenter !== "Ready for inspection" && workCenter !== "UNASSIGNED"
       );
 
       const { products, workCenterSchedules } = dataRef.current;
@@ -714,19 +713,21 @@ export const DataProvider = ({ children }: DataProviderProps) => {
   );
 
   useEffect(() => {
-    console.log("Loading state changed in DataProvider:", loading);
-  }, [loading]);
+    if (!credentialsPath || !sheetIdentifier || credentialsPath === "error" || sheetIdentifier === "error" || credentialsPath === "loading" || sheetIdentifier === "loading") {
+      console.log("Credentials or sheet identifier not found, reloading...");
+      return;
+    } else {
+      console.log("Credentials and sheet identifier found, setting up timeout...");
+      const timeout = setTimeout(() => {
+        if (loading) {
+          console.log("Loading timeout reached, reloading...");
+          window.location.reload();
+        }
+      }, 5000);
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log("Loading timeout reached, reloading...");
-        window.location.reload();
-      }
-    }, 5000);
-
-    return () => clearTimeout(timeout); // Cleanup on component unmount or loading state change
-  }, [loading]);
+      return () => clearTimeout(timeout); // Cleanup on component unmount or loading state change
+    }
+  }, [loading, credentialsPath, sheetIdentifier]);
 
   return (
     <DataContext.Provider value={contextValue}>{children}</DataContext.Provider>
